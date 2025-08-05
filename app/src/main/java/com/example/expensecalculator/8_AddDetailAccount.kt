@@ -11,9 +11,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddCard
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.DriveFileRenameOutline
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -33,68 +39,93 @@ import com.example.expensecalculator.Data.Detail
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddDetail(
-    onDismissRequest:()-> Unit,
-    onSave:(Detail)-> Unit
-){
+    onDismissRequest: () -> Unit,
+    onSave: (Detail) -> Unit
+) {
 
-    var newname by remember{mutableStateOf("")}
+    var newname by remember { mutableStateOf("") }
+    var newdescription by remember { mutableStateOf("") }
 
-    var newdescription by remember{mutableStateOf("")}
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
 
-    AlertDialog(onDismissRequest = onDismissRequest,
-        confirmButton = {
-            // FIX: Added a TextButton to make it clickable
-            TextButton(
-                onClick = {
-                    // FIX: Create the Detail object here.
-                    // The id is null (Room will generate it).
-                    // The amount is 0.0 because it's a new account.
-                    val newDetail = Detail(
-                        name = newname,
-                        description = newdescription,
-                        amount = 0.0 // A new account starts with 0 amount
-                    )
-                    // FIX: Pass the newly created object back through the onSave lambda
-                    onSave(newDetail)
-                }
-            ) {
-                Text("Save")
-            }
+        // CHANGE: Added a main icon to the dialog
+        icon = {
+            Icon(Icons.Default.AddCard, contentDescription = "Add Account Icon")
         },
-        title={Text("Add Account")},
-        text={
 
+        // CHANGE: Added a more descriptive title
+        title = {
+            Text("Add New Account")
+        },
+
+        text = {
             Column(
-                //modifier=Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
-            ){
+            ) {
                 OutlinedTextField(
-                    value=newname,
-                    onValueChange = {newname=it},
-                    modifier=Modifier.fillMaxWidth().padding(vertical = 5.dp),
-                    colors= OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = MaterialTheme.colorScheme.primary,
-                        focusedBorderColor = MaterialTheme.colorScheme.secondary
-                    ),
-                    label = {Text("Enter the name")}
+                    value = newname,
+                    onValueChange = { newname = it },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+                    label = { Text("Account Name*") }, // Added * to indicate required
+                    placeholder = { Text("e.g., Groceries, Fuel") },
+                    // CHANGE: Added a leading icon for better context
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.DriveFileRenameOutline,
+                            contentDescription = "Name Icon"
+                        )
+                    },
+                    singleLine = true
                 )
 
                 Spacer(Modifier.height(8.dp))
 
                 OutlinedTextField(
-                    value=newdescription,
-                    onValueChange = {newdescription=it},
-                    modifier=Modifier.fillMaxWidth(),
-                    colors= OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = MaterialTheme.colorScheme.primary,
-                        focusedBorderColor = MaterialTheme.colorScheme.secondary
-                    ),
-                    label={Text("Enter the Description ")}
+                    value = newdescription,
+                    onValueChange = { newdescription = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Description (Optional)") },
+                    placeholder = { Text("e.g., Monthly household food expenses") },
+                    // CHANGE: Added a leading icon for better context
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Description,
+                            contentDescription = "Description Icon"
+                        )
+                    }
                 )
             }
+        },
 
+        // CHANGE: Made this the primary, filled button for a clear call-to-action
+        confirmButton = {
+            Button(
+                // CHANGE: Added validation. Button is disabled if name is blank.
+                enabled = newname.isNotBlank(),
+                onClick = {
+                    val newDetail = Detail(
+                        name = newname,
+                        description = newdescription,
+                        amount = 0.0
+                    )
+                    onSave(newDetail)
+                }
+            ) {
+                // CHANGE: Added a save icon to the button
+                Icon(Icons.Default.Save, contentDescription = "Save", modifier = Modifier.padding(end = 4.dp))
+                Text("Save")
+            }
+        },
+
+        // CHANGE: Added an explicit Cancel button for better UX
+        dismissButton = {
+            TextButton(
+                onClick = onDismissRequest
+            ) {
+                Text("Cancel")
+            }
         }
-
     )
 }
