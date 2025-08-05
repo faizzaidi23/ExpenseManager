@@ -3,6 +3,7 @@ package com.example.expensecalculator.TripManager
 import android.R.attr.fontWeight
 import android.R.attr.text
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -128,6 +129,7 @@ fun TripMainScreen(
                 items(trips) { trip ->
                     TripItem(
                         trip = trip,
+                        onCardClick = { navController.navigate("trip_detail/${trip.id}") }, // Added navigation to trip detail
                         onEditClick = { navController.navigate("edit_trip/${trip.id}") },
                         onDeleteClick = { viewModel.deleteTrip(trip) }
                     )
@@ -140,11 +142,14 @@ fun TripMainScreen(
 @Composable
 fun TripItem(
     trip: Trip,
+    onCardClick: () -> Unit, // Added callback for card click
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCardClick() }, // Made the entire card clickable
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)

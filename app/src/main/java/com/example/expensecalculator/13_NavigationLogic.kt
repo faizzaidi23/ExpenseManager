@@ -9,6 +9,7 @@ import com.example.expensecalculator.MainScreen
 import com.example.expensecalculator.TripManager.AddTripScreen
 import com.example.expensecalculator.TripManager.EditTripScreen
 import com.example.expensecalculator.TripManager.FirstScreen
+import com.example.expensecalculator.TripManager.TripDetailScreen
 import com.example.expensecalculator.TripManager.TripMainScreen
 import com.example.expensecalculator.TripManager.TripViewModel
 import com.example.expensecalculator.viewModel
@@ -41,6 +42,19 @@ fun NavGraph(navController: NavHostController,viewModel: viewModel,tripViewModel
             val id=backStackEntry.arguments?.getInt("tripId")
             if(id!=null){
                 EditTripScreen(navController = navController, viewModel = tripViewModel, tripId = id)
+            }
+
+        }
+
+        composable("trip_detail/{tripId}", arguments = listOf(navArgument("tripId"){
+
+            type= NavType.IntType
+
+        })){
+            backStackEntry->
+            val id=backStackEntry.arguments?.getInt("tripId")
+            if(id!=null){
+                TripDetailScreen(navController = navController, viewModel = tripViewModel, tripId = id)
             }
 
         }
