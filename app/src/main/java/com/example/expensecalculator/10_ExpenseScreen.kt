@@ -1,52 +1,41 @@
 package com.example.expensecalculator
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ReceiptLong
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.HourglassEmpty
-import androidx.compose.material.icons.filled.ReceiptLong
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FabPosition
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.room.util.copy
 import com.example.expensecalculator.Data.Expense
+import com.example.expensecalculator.TripManager.AccentBlue
+import com.example.expensecalculator.TripManager.DarkPurple
+import com.example.expensecalculator.TripManager.ErrorColor
+import com.example.expensecalculator.TripManager.MidPurple
+import com.example.expensecalculator.TripManager.OffWhite
+import com.example.expensecalculator.TripManager.TextPrimary
+import com.example.expensecalculator.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,7 +44,6 @@ fun ExpenseScreen(
     accountId: Int,
     onNavigateBack: () -> Unit
 ) {
-    // This logic remains exactly as you provided it.
     val expenseList by viewModel.getExpensesForAccount(accountId).collectAsState(initial = emptyList())
 
     var showAddExpenseDialog by remember { mutableStateOf(false) }
@@ -64,7 +52,6 @@ fun ExpenseScreen(
     val copyCurrentExpense = currentExpense
 
     if (showAddExpenseDialog) {
-        // We assume addExpense and editExpense dialogs exist and are styled separately.
         addExpense(
             accountId = accountId,
             onDismissRequest = { showAddExpenseDialog = false },
@@ -87,51 +74,53 @@ fun ExpenseScreen(
     }
 
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().background(OffWhite),
         topBar = {
             TopAppBar(
-                // CHANGE: Title is now static but styled nicely. No new logic.
                 title = { Text("Account Expenses", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Back",
+                            tint = TextPrimary
                         )
                     }
                 },
-                // CHANGE: Consistent coloring to make it visually appealing.
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor = Color.Transparent,
+                    titleContentColor = TextPrimary
+                ),
+                modifier = Modifier.background(
+                    Brush.horizontalGradient(
+                        colors = listOf(DarkPurple, MidPurple)
+                    )
                 )
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showAddExpenseDialog = true },
-                // CHANGE: Styled the FAB for visual consistency.
-                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                containerColor = AccentBlue,
+                contentColor = TextPrimary,
+                shape = RoundedCornerShape(16.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add an Expense")
             }
         },
         floatingActionButtonPosition = FabPosition.End
     ) { innerPadding ->
-        // CHANGE: Added Empty State handling, which only checks if the list is empty.
         if (expenseList.isEmpty()) {
             EmptyState(modifier = Modifier.padding(innerPadding))
         } else {
             LazyColumn(
                 modifier = Modifier
                     .padding(innerPadding)
-                    .fillMaxSize()
-                    .padding(horizontal = 8.dp)
+                    .fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(expenseList) { expense ->
-                    // CHANGE: Replaced the inline Card with a beautiful, reusable composable.
                     ExpenseItemCard(
                         expense = expense,
                         onEdit = {
@@ -148,40 +137,58 @@ fun ExpenseScreen(
     }
 }
 
-// NEW COMPOSABLE: A styled card for displaying a single expense item.
-// This is a PURELY visual component.
 @Composable
 fun ExpenseItemCard(
     expense: Expense,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.98f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ), label = ""
+    )
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .scale(scale)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onEdit
+            ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Default.ReceiptLong,
+                imageVector = Icons.Default.Receipt,
                 contentDescription = "Expense Icon",
-                modifier = Modifier.size(40.dp),
-                tint = MaterialTheme.colorScheme.primary
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(AccentBlue.copy(alpha = 0.1f))
+                    .padding(10.dp),
+                tint = AccentBlue
             )
-            Spacer(modifier = Modifier.weight(0.1f))
+            Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "₹${"%.2f".format(expense.amount)}",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = DarkPurple
                 )
                 if (!expense.description.isNullOrEmpty()) {
                     Spacer(modifier = Modifier.height(4.dp))
@@ -189,7 +196,7 @@ fun ExpenseItemCard(
                         text = expense.description,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Normal,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Color.Gray
                     )
                 }
             }
@@ -198,14 +205,14 @@ fun ExpenseItemCard(
                     Icon(
                         Icons.Default.Edit,
                         contentDescription = "Edit Expense",
-                        tint = MaterialTheme.colorScheme.secondary
+                        tint = MidPurple
                     )
                 }
                 IconButton(onClick = onDelete) {
                     Icon(
                         Icons.Default.Delete,
                         contentDescription = "Delete an expense",
-                        tint = MaterialTheme.colorScheme.error
+                        tint = ErrorColor
                     )
                 }
             }
@@ -213,8 +220,6 @@ fun ExpenseItemCard(
     }
 }
 
-// NEW COMPOSABLE: Displays a message when there are no items in the list.
-// This is a PURELY visual component.
 @Composable
 fun EmptyState(modifier: Modifier = Modifier) {
     Column(
@@ -228,19 +233,20 @@ fun EmptyState(modifier: Modifier = Modifier) {
             imageVector = Icons.Default.HourglassEmpty,
             contentDescription = "Empty List",
             modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            tint = MidPurple.copy(alpha = 0.6f)
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "No expenses recorded yet.",
             style = MaterialTheme.typography.titleMedium,
-            textAlign = TextAlign.Center
+            fontWeight = FontWeight.Bold,
+            color = DarkPurple
         )
         Text(
             text = "Tap the '+' button to add your first one.",
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            color = Color.Gray
         )
     }
 }

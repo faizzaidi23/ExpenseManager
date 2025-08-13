@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -45,6 +46,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.LightGray
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -52,6 +57,16 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.expensecalculator.tripData.Trip
 import com.example.expensecalculator.viewModel
+
+private val PurpleStart = Color(0xFF8A2BE2)
+private val PurpleEnd = Color(0xFF4169E1)
+private val BlueCard = Color(0xFF4A9EFF)
+private val PurpleCard = Color(0xFF8A2BE2)
+private val WhiteBackground = Color(0xFFFFFFFF)
+private val LightGray = Color(0xFFF5F5F5)
+private val TextDark = Color(0xFF2C3E50)
+private val TextGray = Color(0xFF7F8C8D)
+private val RedDelete = Color(0xFFE74C3C)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,22 +83,28 @@ fun TripMainScreen(
                 title = {
                     Text(
                         text = "Trip Manager",
-                        modifier = Modifier.fillMaxWidth(),
-                        fontSize = 28.sp,
+                        fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        color= MaterialTheme.colorScheme.onPrimary
+                        color = Color.White,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
                     )
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary),
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent
+                ),
+                modifier = Modifier.background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(PurpleStart, PurpleEnd)
+                    )
+                ),
                 navigationIcon = {
-                    IconButton(
-                        onClick = { navController.popBackStack() }
-                    ) {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Go back to main Screen",
-                            tint = MaterialTheme.colorScheme.onPrimary
+                            contentDescription = "Go back",
+                            tint = Color.White,
+                            modifier = Modifier.size(26.dp)
                         )
                     }
                 }
@@ -92,44 +113,79 @@ fun TripMainScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { navController.navigate("add_trip") },
-                containerColor = MaterialTheme.colorScheme.primary
+                containerColor = BlueCard,
+                modifier = Modifier.size(64.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Trip", tint = MaterialTheme.colorScheme.onPrimary)
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = "Add Trip",
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp)
+                )
             }
-        }
-    ) { internalPadding ->
+        },
+        containerColor = LightGray
+    ) { padding ->
         if (trips.isEmpty()) {
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(internalPadding)
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                    .padding(padding)
+                    .background(LightGray),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    "No Trips Yet",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    "Click the '+' button to add your first trip!",
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(32.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(100.dp)
+                            .clip(RoundedCornerShape(50.dp))
+                            .background(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(BlueCard.copy(alpha = 0.2f), Color.Transparent)
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Place,
+                            contentDescription = null,
+                            tint = BlueCard,
+                            modifier = Modifier.size(50.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(
+                        "No Trips Yet",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextDark
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "Plan and track your travel expenses\nby adding your first trip",
+                        fontSize = 16.sp,
+                        color = TextGray,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 22.sp
+                    )
+                }
             }
         } else {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(internalPadding)
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(padding)
+                    .background(LightGray)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(trips) { trip ->
                     TripItem(
                         trip = trip,
-                        onCardClick = { navController.navigate("trip_detail/${trip.id}") }, // Added navigation to trip detail
+                        onCardClick = { navController.navigate("trip_detail/${trip.id}") },
                         onEditClick = { navController.navigate("edit_trip/${trip.id}") },
                         onDeleteClick = { viewModel.deleteTrip(trip) }
                     )
@@ -142,88 +198,112 @@ fun TripMainScreen(
 @Composable
 fun TripItem(
     trip: Trip,
-    onCardClick: () -> Unit, // Added callback for card click
+    onCardClick: () -> Unit,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
+    // Alternate between blue and purple like your main screen
+    val cardColor = if ((trip.id % 2).toLong() == 0L) BlueCard else PurpleCard
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onCardClick() }, // Made the entire card clickable
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            .clickable { onCardClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(20.dp)
         ) {
-            // --- Header: Destination and Icon ---
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            // Trip destination header
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Icon(
                     imageVector = Icons.Default.Place,
                     contentDescription = "Destination",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(12.dp))
                 Text(
                     text = trip.destination,
-                    style = MaterialTheme.typography.headlineSmall,
+                    fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = Color.White
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- Details: Participants and Days ---
+            // Trip details
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceAround
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                InfoPill(icon = Icons.Default.Groups, label = "Participants", value = trip.participants.toString())
-                InfoPill(icon = Icons.Default.CalendarToday, label = "Days", value = trip.days.toString())
+                InfoChip(
+                    icon = Icons.Default.Groups,
+                    value = trip.participants.toString(),
+                    label = "People"
+                )
+                InfoChip(
+                    icon = Icons.Default.CalendarToday,
+                    value = trip.days.toString(),
+                    label = "Days"
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-            Spacer(modifier = Modifier.height(16.dp))
 
-            // --- Footer: Finances and Actions ---
+            // Cost and actions
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Per Person Cost
                 Column {
                     Text(
-                        text = "Per Person Cost",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        text = "Cost per person",
+                        fontSize = 14.sp,
+                        color = Color.White.copy(alpha = 0.8f)
                     )
                     Text(
-                        text = "$${String.format("%.2f", trip.expenditure / trip.participants)}",
-                        style = MaterialTheme.typography.titleLarge,
+                        text = "₹${String.format("%.0f", trip.expenditure / trip.participants)}",
+                        fontSize = 26.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        color = Color.White
                     )
                 }
 
-                // Action Buttons
-                Row {
-                    IconButton(onClick = onEditClick) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    IconButton(
+                        onClick = onEditClick,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.White.copy(alpha = 0.2f))
+                            .size(44.dp)
+                    ) {
                         Icon(
                             Icons.Default.Edit,
                             contentDescription = "Edit Trip",
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp)
                         )
                     }
-                    IconButton(onClick = onDeleteClick) {
+                    IconButton(
+                        onClick = onDeleteClick,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(RedDelete.copy(alpha = 0.8f))
+                            .size(44.dp)
+                    ) {
                         Icon(
                             Icons.Default.Delete,
                             contentDescription = "Delete Trip",
-                            tint = MaterialTheme.colorScheme.error
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp)
                         )
                     }
                 }
@@ -233,27 +313,40 @@ fun TripItem(
 }
 
 @Composable
-fun InfoPill(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, value: String) {
+fun InfoChip(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    value: String,
+    label: String
+) {
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color.White.copy(alpha = 0.15f))
+            .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(18.dp)
+                tint = Color.White,
+                modifier = Modifier.size(20.dp)
             )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = "$label: $value",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Column {
+                Text(
+                    text = value,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text(
+                    text = label,
+                    fontSize = 12.sp,
+                    color = Color.White.copy(alpha = 0.8f)
+                )
+            }
         }
     }
 }

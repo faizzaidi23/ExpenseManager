@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -42,31 +43,39 @@ import androidx.navigation.NavController
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FirstScreen(navController: NavController) {
+    // CHANGED: Background to pure white/light gray
+    val backgroundColor = Color(0xFFF8F9FA)
+
+    // Header gradient remains purple-to-blue
+    val topBarGradient = Brush.horizontalGradient(
+        colors = listOf(Color(0xFF6a11cb), Color(0xFF2575fc))
+    )
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        modifier=Modifier.fillMaxWidth(),
-                        text="Trek & Track",
-                        fontSize = 28.sp,
+                        modifier = Modifier.fillMaxWidth(),
+                        text = "Trek & Track",
+                        fontSize = 32.sp, // CHANGED: Increased font size
                         textAlign = TextAlign.Center,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimary
+                        color = Color.White
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
+                    containerColor = Color.Transparent
+                ),
+                modifier = Modifier.background(topBarGradient)
             )
         }
     ) { paddingValues ->
-        // Use a solid background color from the theme
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surface) // Changed background
+                .background(backgroundColor) // CHANGED
                 .padding(paddingValues)
         ) {
             Column(
@@ -74,13 +83,10 @@ fun FirstScreen(navController: NavController) {
                     .fillMaxSize()
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(40.dp, Alignment.CenterVertically) // Adjusted arrangement
+                verticalArrangement = Arrangement.spacedBy(40.dp, Alignment.CenterVertically)
             ) {
-
-                // Welcome Section
                 WelcomeSection()
 
-                // Feature Cards
                 Column(
                     verticalArrangement = Arrangement.spacedBy(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -90,15 +96,14 @@ fun FirstScreen(navController: NavController) {
                         description = "Plan and track your travel expenses",
                         icon = Icons.Default.Flight,
                         onClick = { navController.navigate("trip_details") },
-                        color = MaterialTheme.colorScheme.primaryContainer
+                        color = Color(0xFF1E88E5) // CHANGED: Deep teal blue
                     )
-
                     FeatureCard(
                         title = "Account Manager",
                         description = "Manage your daily expenses and accounts",
                         icon = Icons.Default.AccountBalance,
                         onClick = { navController.navigate("detail_screen") },
-                        color = MaterialTheme.colorScheme.secondaryContainer
+                        color = Color(0xFF673AB7) // CHANGED: Rich purple
                     )
                 }
             }
@@ -113,17 +118,16 @@ fun WelcomeSection() {
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
-
             text = "Welcome",
-            fontSize = 32.sp,
+            fontSize = 36.sp, // CHANGED: Increased font size
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = Color(0xFF212529), // CHANGED: Darker for clarity
             textAlign = TextAlign.Center
         )
         Text(
             text = "Manage your finances efficiently",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            fontSize = 18.sp, // CHANGED: Increased font size
+            color = Color(0xFF343A40), // CHANGED: Darker for clarity
             textAlign = TextAlign.Center
         )
     }
@@ -136,20 +140,20 @@ fun FeatureCard(
     description: String,
     icon: ImageVector,
     onClick: () -> Unit,
-    color: androidx.compose.ui.graphics.Color
+    color: Color
 ) {
     Card(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(120.dp),
+            .height(140.dp), // CHANGED: Increased height for readability
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = color.copy(alpha = 0.9f)
+            containerColor = color.copy(alpha = 0.95f)
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 8.dp,
-            pressedElevation = 12.dp
+            defaultElevation = 12.dp,
+            pressedElevation = 16.dp
         )
     ) {
         Row(
@@ -159,38 +163,41 @@ fun FeatureCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Icon
+            // CHANGED: Larger icon and clearer background contrast
             Box(
                 modifier = Modifier
-                    .size(60.dp)
+                    .size(70.dp) // CHANGED: Increased size
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(color.copy(alpha = 0.9f), Color.White.copy(alpha = 0.2f))
+                        )
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = title,
-                    modifier = Modifier.size(32.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                    modifier = Modifier.size(36.dp), // CHANGED: Increased size
+                    tint = Color.White
                 )
             }
 
-            // Text Content
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(6.dp) // CHANGED: More spacing
             ) {
                 Text(
                     text = title,
-                    fontSize = 20.sp,
+                    fontSize = 22.sp, // CHANGED: Increased font size
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = Color.White
                 )
                 Text(
                     text = description,
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    lineHeight = 18.sp
+                    fontSize = 16.sp, // CHANGED: Increased font size
+                    color = Color.White.copy(alpha = 0.95f),
+                    lineHeight = 20.sp
                 )
             }
         }

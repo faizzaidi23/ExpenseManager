@@ -1,58 +1,44 @@
 package com.example.expensecalculator
 
-import android.graphics.drawable.Icon
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FabPosition
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButtonDefaults.Icon
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.sp
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Paid
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.expensecalculator.Data.Detail
+import com.example.expensecalculator.TripManager.AccentBlue
+import com.example.expensecalculator.TripManager.DarkPurple
+import com.example.expensecalculator.TripManager.ErrorColor
+import com.example.expensecalculator.TripManager.MidPurple
+import com.example.expensecalculator.TripManager.OffWhite
+import com.example.expensecalculator.TripManager.TextPrimary
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,7 +48,7 @@ fun MainScreen(navController: NavController, viewModel: viewModel) {
     var addDetailDialog by remember { mutableStateOf(false) }
     var editDialog by remember { mutableStateOf(false) }
     var currentAccount by remember { mutableStateOf<Detail?>(null) }
-    var accountCopy = currentAccount
+    val accountCopy = currentAccount
 
     if (addDetailDialog) {
         AddDetail(
@@ -86,20 +72,23 @@ fun MainScreen(navController: NavController, viewModel: viewModel) {
     }
 
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().background(OffWhite),
         topBar = {
             TopAppBar(
-                title = { Text("Expense Accounts", fontSize = 28.sp, fontWeight = FontWeight.Bold) },
+                title = { Text("Expense Accounts", fontSize = 22.sp, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Go back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Go back", tint = TextPrimary)
                     }
                 },
-                // CHANGE: Added specific colors for better theming and contrast
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor = Color.Transparent,
+                    titleContentColor = TextPrimary
+                ),
+                modifier = Modifier.background(
+                    Brush.horizontalGradient(
+                        colors = listOf(DarkPurple, MidPurple)
+                    )
                 )
             )
         },
@@ -108,35 +97,66 @@ fun MainScreen(navController: NavController, viewModel: viewModel) {
                 onClick = {
                     addDetailDialog = true
                 },
-                // CHANGE: Styled the FAB with tertiary colors to make it stand out
-                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                containerColor = AccentBlue,
+                contentColor = TextPrimary,
+                shape = RoundedCornerShape(16.dp)
             ) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = "Add new Expense Account")
             }
         },
         floatingActionButtonPosition = FabPosition.End
     ) { innerpadding ->
-        LazyColumn(
-            modifier = Modifier
-                .padding(innerpadding)
-                .fillMaxSize()
-                .padding(horizontal = 8.dp) // Add horizontal padding for the list
-        ) {
-            items(detailsList) { detail ->
-                AccountCard(
-                    id = detail.id,
-                    navController = navController,
-                    detail = detail,
-                    viewModel = viewModel,
-                    onEditDialog = {
-                        currentAccount = detail
-                        editDialog = true
-                    },
-                    onDeleteDialog = {
-                        viewModel.deleteDetail(detail)
-                    }
-                )
+        if (detailsList.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerpadding),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        imageVector = Icons.Default.AccountBalanceWallet,
+                        contentDescription = "No Accounts",
+                        tint = MidPurple.copy(alpha = 0.7f),
+                        modifier = Modifier.size(64.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        "No Accounts Yet",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = DarkPurple
+                    )
+                    Text(
+                        "Tap the '+' button to add your first account.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.Gray
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .padding(innerpadding)
+                    .fillMaxSize(),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(detailsList) { detail ->
+                    AccountCard(
+                        id = detail.id,
+                        navController = navController,
+                        detail = detail,
+                        viewModel = viewModel,
+                        onEditDialog = {
+                            currentAccount = detail
+                            editDialog = true
+                        },
+                        onDeleteDialog = {
+                            viewModel.deleteDetail(detail)
+                        }
+                    )
+                }
             }
         }
     }
@@ -152,45 +172,55 @@ fun AccountCard(
     onEditDialog: () -> Unit,
     onDeleteDialog: () -> Unit
 ) {
-    // We get the total amount for this specific account
     val totalAmount by viewModel.getTotalForAccount(detail.id!!).collectAsState(initial = 0.0)
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.98f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ), label = ""
+    )
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .clickable { navController.navigate("expense_screen/$id") },
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        // CHANGE: Using a subtle background color for the card
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            .scale(scale)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = { navController.navigate("expense_screen/$id") }
+            ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp, pressedElevation = 2.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // CHANGE: Added a prominent leading icon
             Box(
                 modifier = Modifier
-                    .size(50.dp)
+                    .size(56.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
+                    .background(MidPurple.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.AccountBalanceWallet,
                     contentDescription = "Account Icon",
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    tint = MidPurple,
                     modifier = Modifier.size(30.dp)
                 )
             }
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // This column holds all the text and the action buttons
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = detail.name, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text(text = detail.name, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = DarkPurple)
                 Spacer(modifier = Modifier.height(4.dp))
 
                 if (!detail.description.isNullOrEmpty()) {
@@ -198,49 +228,41 @@ fun AccountCard(
                         text = detail.description,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Normal,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Color.Gray
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                // CHANGE: Row for Total Spent to include an icon
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.Paid,
                         contentDescription = "Amount Icon",
                         modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.tertiary
+                        tint = AccentBlue
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "Total Spent: ₹${totalAmount ?: 0.0}",
+                        text = "Total Spent: ₹${String.format("%.2f", totalAmount)}",
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.tertiary
+                        color = AccentBlue
                     )
                 }
             }
 
-            // This column holds the action buttons, aligned to the right
             Column(horizontalAlignment = Alignment.End) {
-                IconButton(
-                    onClick = onEditDialog,
-                ) {
-                    // CHANGE: Colored the Edit icon
+                IconButton(onClick = onEditDialog) {
                     Icon(
                         Icons.Default.Edit,
                         contentDescription = "Edit Account info",
-                        tint = MaterialTheme.colorScheme.secondary
+                        tint = MidPurple
                     )
                 }
 
-                IconButton(
-                    onClick = onDeleteDialog
-                ) {
-                    // CHANGE: Colored the Delete icon to indicate a destructive action
+                IconButton(onClick = onDeleteDialog) {
                     Icon(
                         Icons.Default.Delete,
                         contentDescription = "Delete Account info",
-                        tint = MaterialTheme.colorScheme.error
+                        tint = ErrorColor
                     )
                 }
             }
