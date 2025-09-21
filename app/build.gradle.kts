@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.google.ksp)
+    // add the kotlinx serialization plugin to handle the json data
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.21"
 }
 
 android {
@@ -62,6 +64,12 @@ dependencies {
     // Room Database
     implementation(libs.bundles.androidx.room)
     ksp(libs.androidx.room.compiler)
+
+    //----Additions for networking
+    implementation("com.squareup.retrofit2:retrofit:2.9.0") // The core library for making network requests to your backend
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0") // The library for converting Kotlin objects to and from JSON.
+    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0") // A converter that allows retrofit to use kotlinx Serialization
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0") // A utility to log network request and response details, which is very helpful for debugging
 
     // Testing
     testImplementation(libs.junit)

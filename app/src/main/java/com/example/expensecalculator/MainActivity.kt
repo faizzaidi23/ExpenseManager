@@ -10,11 +10,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import com.example.expensecalculator.Authentication.AuthNavigator
 import com.example.expensecalculator.Data.ExpenseDatabase
 import com.example.expensecalculator.TripManager.TripRepository
 import com.example.expensecalculator.TripManager.TripViewModel
@@ -40,11 +45,28 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         setContent {
-            val variableViewModel:viewModel= viewModel(factory = factory)
-            val tripViewModel: TripViewModel= viewModel(factory = factory2)
-            val navController= rememberNavController()
             ExpenseCalculatorTheme {
-                    NavGraph(navController = navController, viewModel = variableViewModel, tripViewModel = tripViewModel)
+                // State to track if the user is logged in
+                var isLoggedIn by remember { mutableStateOf(false) }
+
+                if (isLoggedIn) {
+                    // --- If logged in, show your main Expense Calculator App ---
+                    val variableViewModel: viewModel = viewModel(factory = factory)
+                    val tripViewModel: TripViewModel = viewModel(factory = factory2)
+                    val navController = rememberNavController()
+                    NavGraph(
+                        navController = navController,
+                        viewModel = variableViewModel,
+                        tripViewModel = tripViewModel
+                    )
+                } else {
+                    // --- If not logged in, show the Authentication Flow ---
+                    // When onLoginSuccess is called, it will set isLoggedIn to true,
+                    // which recomposes MainActivity and shows the NavGraph.
+                    AuthNavigator(onLoginSuccess = {
+                        isLoggedIn = true
+                    })
+                }
             }
         }
     }
