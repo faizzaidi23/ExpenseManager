@@ -1,35 +1,47 @@
 package com.example.expensecalculator.Data
 
+import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
+import androidx.room.Relation
+import java.util.Date
 
-@Entity(tableName="details")
 
-data class Detail(
+@Entity(tableName="accounts")
+data class Account(
     @PrimaryKey(autoGenerate = true)
-    val id:Int?=null,
+    val id: Int = 0,
     val name: String,
-    val description:String?=null,
-    val amount: Double
+    val description: String? = null
 )
 
 @Entity(
     tableName="expenses",
-    //Designing a foreign key link here
-    foreignKeys = [ // We can define more than one foreign key for a single entity. The foreignKeys parameter takes an Array of @ForeignKey annotations, which is why is is written inside the square brackets. We can simply add more ForeignKey definitions to this array
+    foreignKeys = [
         ForeignKey(
-            entity= Detail::class,
+            entity = Account::class,
             parentColumns = ["id"],
             childColumns = ["accountId"],
-            onDelete = ForeignKey.CASCADE // This is optional : This deletes the expenses if the parent account is deleted
+            onDelete = ForeignKey.CASCADE
         )
     ]
 )
 data class Expense(
     @PrimaryKey(autoGenerate = true)
-    val id:Int?=null,
-    val description: String?=null,
+    val id: Int = 0,
+    val description: String,
     val amount: Double,
-    val accountId: Int?=null
+    val accountId: Int,
+    val date: Date = Date()
+)
+
+
+data class AccountWithExpenses(
+    @Embedded val account: Account,
+    @Relation(
+        parentColumn = "id",
+        entityColumn = "accountId"
+    )
+    val expenses: List<Expense>
 )

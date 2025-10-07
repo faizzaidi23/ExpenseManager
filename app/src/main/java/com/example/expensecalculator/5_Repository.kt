@@ -1,46 +1,34 @@
 package com.example.expensecalculator
 
-import com.example.expensecalculator.Data.Detail
-import com.example.expensecalculator.Data.DetailDao
+import com.example.expensecalculator.Data.Account // Renamed from Detail
+import com.example.expensecalculator.Data.AccountDao // Renamed from DetailDao
 import com.example.expensecalculator.Data.Expense
 import com.example.expensecalculator.Data.ExpenseDao
 import kotlinx.coroutines.flow.Flow
 
+// Renamed from 'repository' to 'ExpenseRepository' for clarity
+class ExpenseRepository(private val accountDao: AccountDao, private val expenseDao: ExpenseDao ){
 
-/*
-This repo acts as a clean api for the apps data it acts as a mediator between the data
-sources like room database a network api etc. and the rest of the app like the viewModel
-*/
+    // Renamed from 'details' to 'allAccounts'
+    val allAccounts: Flow<List<Account>> = accountDao.getAllAccounts()
 
-class repository(private val detailsDao: DetailDao,private val expenseDao: ExpenseDao ){
-
-
-    val details:Flow<List<Detail>>
-        get() {
-            return detailsDao.getAllDetails()
-        }
-
-    suspend fun addDetail(detail: Detail){
-        detailsDao.insertDetail(detail=detail)
+    suspend fun addAccount(account: Account){
+        accountDao.addAccount(account = account)
     }
 
-    suspend fun deleteDetail(detail:Detail){
-        detailsDao.deleteDetail(detail=detail)
+    suspend fun deleteAccount(account: Account){
+        accountDao.deleteAccount(account = account)
     }
 
-    suspend fun updateDetail(detail: Detail){
-        detailsDao.updateDetail(detail=detail)
+    suspend fun updateAccount(account: Account){
+        accountDao.updateAccount(account = account)
     }
 
     fun getTotalForAccount(accountId:Int):Flow<Double?>{
         return expenseDao.getTotalForAccount(accountId=accountId)
     }
 
-    val expenses:Flow<List<Expense>>
-            get(){
-                return expenseDao.getAllExpenses()
-            }
-
+    val allExpenses:Flow<List<Expense>> = expenseDao.getAllExpenses()
 
     suspend fun addExpense(expense: Expense){
         expenseDao.addExpense(expense=expense)
@@ -53,7 +41,6 @@ class repository(private val detailsDao: DetailDao,private val expenseDao: Expen
     suspend fun updateExpense(expense:Expense){
         expenseDao.updateExpense(expense=expense)
     }
-
 
     fun getExpensesForAccount(accountId:Int):Flow<List<Expense>>{
         return expenseDao.getExpensesForAccount(accountId=accountId)

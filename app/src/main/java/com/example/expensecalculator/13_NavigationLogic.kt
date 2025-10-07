@@ -1,79 +1,78 @@
+package com.example.expensecalculator
+
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.example.expensecalculator.ExpenseScreen
-import com.example.expensecalculator.MainScreen
 import com.example.expensecalculator.TripManager.AddTripScreen
-import com.example.expensecalculator.TripManager.EditTripScreen
 import com.example.expensecalculator.TripManager.FirstScreen
 import com.example.expensecalculator.TripManager.TripDetailScreen
 import com.example.expensecalculator.TripManager.TripMainScreen
 import com.example.expensecalculator.TripManager.TripViewModel
-import com.example.expensecalculator.viewModel
 
 @Composable
-fun NavGraph(navController: NavHostController,viewModel: viewModel,tripViewModel: TripViewModel){
-
+fun NavGraph(
+    navController: NavHostController,
+    expenseViewModel: ExpenseViewModel, // Renamed for clarity
+    tripViewModel: TripViewModel
+){
     NavHost(navController = navController, startDestination = "first_screen"){
-
 
         composable("first_screen"){
             FirstScreen(navController = navController)
         }
 
-        composable("detail_screen"){
-            MainScreen(navController = navController, viewModel = viewModel)
+        composable("main_screen"){ // Renamed from detail_screen
+            MainScreen(navController = navController, viewModel = expenseViewModel)
         }
 
-        composable("trip_details"){
+        composable("trip_main"){ // Renamed from trip_details
             TripMainScreen(navController = navController, viewModel = tripViewModel)
         }
 
-        composable("add_trip"){
-            AddTripScreen(navController = navController, viewModel = tripViewModel)
+        // --- UPDATED: Combined Add/Edit Trip Route ---
+        // Uses an optional argument. If tripId is not passed, it defaults to -1 (Add Mode)
+        composable(
+            route = "add_trip?tripId={tripId}",
+            arguments = listOf(navArgument("tripId") {
+                type = NavType.IntType
+                defaultValue = -1 // Default value for adding a new trip
+            })
+        ) { backStackEntry ->
+            val tripId = backStackEntry.arguments?.getInt("tripId")
+            AddTripScreen(
+                navController = navController,
+                viewModel = tripViewModel,
+                tripId = if (tripId == -1) null else tripId // Pass null for Add Mode
+            )
         }
-        composable("edit_trip/{tripId}", arguments = listOf(navArgument("tripId"){
-            type= NavType.IntType
-        })){
-            backStackEntry->
-            val id=backStackEntry.arguments?.getInt("tripId")
-            if(id!=null){
-                EditTripScreen(navController = navController, viewModel = tripViewModel, tripId = id)
-            }
 
-        }
+        // --- REMOVED: The old edit_trip route is no longer needed ---
 
-        composable("trip_detail/{tripId}", arguments = listOf(navArgument("tripId"){
-
-            type= NavType.IntType
-
-        })){
-            backStackEntry->
-            val id=backStackEntry.arguments?.getInt("tripId")
-            if(id!=null){
+        composable(
+            "trip_detail/{tripId}",
+            arguments = listOf(navArgument("tripId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val id = backStackEntry.arguments?.getInt("tripId")
+            if (id != null) {
                 TripDetailScreen(navController = navController, viewModel = tripViewModel, tripId = id)
             }
-
         }
 
-        composable(route="expense_screen/{detailId}", arguments = listOf(navArgument("detailId"){ type=
-            NavType.IntType }))
-
-        {backStackEntry->
-            val id=backStackEntry.arguments?.getInt("detailId")
-
-            if(id!=null){
+        composable(
+            route = "expense_screen/{accountId}", // Renamed from detailId
+            arguments = listOf(navArgument("accountId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val id = backStackEntry.arguments?.getInt("accountId")
+            if (id != null) {
                 ExpenseScreen(
-                    viewModel=viewModel,
+                    viewModel = expenseViewModel,
                     accountId = id,
-                    onNavigateBack = {navController.popBackStack()}
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
-
-
         }
     }
 }

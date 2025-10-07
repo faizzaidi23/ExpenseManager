@@ -3,94 +3,73 @@ package com.example.expensecalculator
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.expensecalculator.Data.Detail
+import com.example.expensecalculator.Data.Account // Renamed from Detail
 import com.example.expensecalculator.Data.Expense
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class viewModel(val repository: repository):ViewModel(){
+// Renamed from 'viewModel' to 'ExpenseViewModel'
+class ExpenseViewModel(private val repository: ExpenseRepository):ViewModel(){
 
-
-    val details=repository.details.map{it.reversed()}.stateIn(
-        viewModelScope, SharingStarted.WhileSubscribed(),emptyList()
+    // Renamed from 'details' to 'allAccounts'
+    val allAccounts = repository.allAccounts.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(), emptyList()
     )
 
-    val expenses=repository.expenses.map{it.reversed()}.stateIn(
-        viewModelScope, SharingStarted.WhileSubscribed(),emptyList()
-    )
-
-    fun addDetail(detail:Detail){
+    fun addAccount(account: Account){
         viewModelScope.launch{
-            repository.addDetail(detail=detail)
+            repository.addAccount(account = account)
         }
     }
 
-    fun deleteDetail(detail: Detail){
+    fun deleteAccount(account: Account){
         viewModelScope.launch{
-            repository.deleteDetail(detail=detail)
+            repository.deleteAccount(account = account)
         }
     }
 
-    fun updateDetail(detail:Detail){
+    fun updateAccount(account: Account){
         viewModelScope.launch{
-            repository.updateDetail(detail=detail)
+            repository.updateAccount(account = account)
         }
     }
 
-    fun addExpense(expense:Expense){
+    fun addExpense(expense: Expense){
         viewModelScope.launch{
-            repository.addExpense(expense=expense)
+            repository.addExpense(expense = expense)
         }
     }
 
-    fun deleteExpense(expense:Expense){
+    fun deleteExpense(expense: Expense){
         viewModelScope.launch{
-            repository.deleteExpense(expense=expense)
+            repository.deleteExpense(expense = expense)
         }
     }
 
-    fun updateExpense(expense:Expense){
+    fun updateExpense(expense: Expense){
         viewModelScope.launch {
-            repository.updateExpense(expense=expense)
+            repository.updateExpense(expense = expense)
         }
     }
 
-    // To get the total amount for a specific account
-    fun getTotalForAccount(accountId: Int):Flow<Double?>{
+    fun getTotalForAccount(accountId: Int): Flow<Double?> {
         return repository.getTotalForAccount(accountId = accountId)
     }
 
-    // To get all the expenses for a particular account
-    fun getExpensesForAccount(accountId:Int):Flow<List<Expense>>{
-        return repository.getExpensesForAccount(accountId=accountId)
+    fun getExpensesForAccount(accountId: Int): Flow<List<Expense>> {
+        return repository.getExpensesForAccount(accountId = accountId)
     }
 }
 
-
-
-class AppViewModelFactory(private val repository: repository) : ViewModelProvider.Factory {
-
-    /**
-     * This 'create' method is called by the system to create a ViewModel instance.
-     */
+// Renamed from 'AppViewModelFactory' to 'ExpenseViewModelFactory'
+class ExpenseViewModelFactory(private val repository: ExpenseRepository) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-
-        // Check if the requested ViewModel class is your 'viewModel' class
-        if (modelClass.isAssignableFrom(viewModel::class.java)) {
-
-            // If it is, create an instance of your viewModel, passing the repository to it.
-            // The Suppress annotation is needed to handle the generic type casting.
+        if (modelClass.isAssignableFrom(ExpenseViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return viewModel(repository) as T
+            return ExpenseViewModel(repository) as T
         }
-
-        // If an unknown ViewModel is requested, throw an error.
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
-
-

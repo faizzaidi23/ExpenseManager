@@ -14,146 +14,124 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Paid
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.expensecalculator.Data.Detail
-import com.example.expensecalculator.TripManager.AccentBlue
-import com.example.expensecalculator.TripManager.DarkPurple
+import com.example.expensecalculator.Data.Account
+// --- CORRECTED IMPORTS ---
 import com.example.expensecalculator.TripManager.ErrorColor
-import com.example.expensecalculator.TripManager.MidPurple
-import com.example.expensecalculator.TripManager.OffWhite
-import com.example.expensecalculator.TripManager.TextPrimary
-
+import com.example.expensecalculator.TripManager.IconBackground
+import com.example.expensecalculator.TripManager.PrimaryBlue
+import com.example.expensecalculator.TripManager.PrimaryText
+import com.example.expensecalculator.TripManager.ScreenBackground
+import com.example.expensecalculator.TripManager.SecondaryText
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(navController: NavController, viewModel: viewModel) {
+fun MainScreen(navController: NavController, viewModel: ExpenseViewModel) {
 
-    val detailsList by viewModel.details.collectAsState()
-    var addDetailDialog by remember { mutableStateOf(false) }
-    var editDialog by remember { mutableStateOf(false) }
-    var currentAccount by remember { mutableStateOf<Detail?>(null) }
+    // Added initial value for safety
+    val accountsList by viewModel.allAccounts.collectAsState(initial = emptyList())
+    var showAddAccountDialog by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var currentAccount by remember { mutableStateOf<Account?>(null) }
     val accountCopy = currentAccount
 
-    if (addDetailDialog) {
-        AddDetail(
-            onDismissRequest = { addDetailDialog = false },
-            onSave = { detail ->
-                viewModel.addDetail(detail)
-                addDetailDialog = false
+    if (showAddAccountDialog) {
+        // Renamed for consistency
+        AddAccount(
+            onDismissRequest = { showAddAccountDialog = false },
+            onSave = { account ->
+                viewModel.addAccount(account)
+                showAddAccountDialog = false
             }
         )
     }
 
-    if (editDialog && accountCopy != null) {
+    if (showEditDialog && accountCopy != null) {
         EditAccount(
             account = accountCopy,
-            onDismissRequest = { editDialog = false },
+            onDismissRequest = { showEditDialog = false },
             onSave = { updatedAccount ->
-                viewModel.updateDetail(updatedAccount)
-                editDialog = false // Close dialog after saving
+                viewModel.updateAccount(updatedAccount)
+                showEditDialog = false
             }
         )
     }
 
     Scaffold(
-        modifier = Modifier.fillMaxSize().background(OffWhite),
         topBar = {
             TopAppBar(
-                title = { Text("Expense Accounts", fontSize = 22.sp, fontWeight = FontWeight.Bold) },
+                title = { Text("Expense Accounts", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Go back", tint = TextPrimary)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Go back", tint = PrimaryText)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    titleContentColor = TextPrimary
-                ),
-                modifier = Modifier.background(
-                    Brush.horizontalGradient(
-                        colors = listOf(DarkPurple, MidPurple)
-                    )
+                    containerColor = ScreenBackground,
+                    titleContentColor = PrimaryText
                 )
             )
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = {
-                    addDetailDialog = true
-                },
-                containerColor = AccentBlue,
-                contentColor = TextPrimary,
+                onClick = { showAddAccountDialog = true },
+                containerColor = PrimaryBlue,
+                contentColor = Color.White,
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = "Add new Expense Account")
             }
         },
-        floatingActionButtonPosition = FabPosition.End
+        containerColor = ScreenBackground
     ) { innerpadding ->
-        if (detailsList.isEmpty()) {
+        if (accountsList.isEmpty()) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerpadding),
+                modifier = Modifier.fillMaxSize().padding(innerpadding),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
-                        imageVector = Icons.Default.AccountBalanceWallet,
-                        contentDescription = "No Accounts",
-                        tint = MidPurple.copy(alpha = 0.7f),
+                        Icons.Default.AccountBalanceWallet, "No Accounts",
+                        tint = SecondaryText.copy(alpha = 0.7f),
                         modifier = Modifier.size(64.dp)
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        "No Accounts Yet",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = DarkPurple
-                    )
-                    Text(
-                        "Tap the '+' button to add your first account.",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Color.Gray
-                    )
+                    Text("No Accounts Yet", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = PrimaryText)
+                    Text("Tap the '+' button to add your first account.", style = MaterialTheme.typography.bodyLarge, color = SecondaryText)
                 }
             }
         } else {
             LazyColumn(
-                modifier = Modifier
-                    .padding(innerpadding)
-                    .fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                modifier = Modifier.padding(innerpadding).fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(detailsList) { detail ->
+                items(accountsList) { account ->
                     AccountCard(
-                        id = detail.id,
-                        navController = navController,
-                        detail = detail,
+                        account = account,
                         viewModel = viewModel,
-                        onEditDialog = {
-                            currentAccount = detail
-                            editDialog = true
+                        onClick = {
+                            if (account.id != null) {
+                                navController.navigate("expense_screen/${account.id}")
+                            }
                         },
-                        onDeleteDialog = {
-                            viewModel.deleteDetail(detail)
+                        onEdit = {
+                            currentAccount = account
+                            showEditDialog = true
+                        },
+                        onDelete = {
+                            viewModel.deleteAccount(account)
                         }
                     )
                 }
@@ -165,105 +143,67 @@ fun MainScreen(navController: NavController, viewModel: viewModel) {
 
 @Composable
 fun AccountCard(
-    id: Int?,
-    navController: NavController,
-    detail: Detail,
-    viewModel: viewModel,
-    onEditDialog: () -> Unit,
-    onDeleteDialog: () -> Unit
+    account: Account,
+    viewModel: ExpenseViewModel,
+    onClick: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
-    val totalAmount by viewModel.getTotalForAccount(detail.id!!).collectAsState(initial = 0.0)
+    // Handled nullable ID safely
+    val totalAmount by if (account.id != null) {
+        viewModel.getTotalForAccount(account.id).collectAsState(initial = 0.0)
+    } else {
+        remember { mutableStateOf(0.0) }
+    }
+
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.98f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ), label = ""
-    )
+    val scale by animateFloatAsState(targetValue = if (isPressed) 0.98f else 1f, label = "cardScale")
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .scale(scale)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = { navController.navigate("expense_screen/$id") }
-            ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp, pressedElevation = 2.dp),
+        modifier = Modifier.fillMaxWidth().scale(scale).clickable(
+            interactionSource = interactionSource,
+            indication = null,
+            onClick = onClick
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(MidPurple.copy(alpha = 0.1f)),
+                modifier = Modifier.size(56.dp).clip(CircleShape).background(IconBackground),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.AccountBalanceWallet,
-                    contentDescription = "Account Icon",
-                    tint = MidPurple,
+                    Icons.Default.AccountBalanceWallet, "Account Icon",
+                    tint = PrimaryBlue,
                     modifier = Modifier.size(30.dp)
                 )
             }
-
             Spacer(modifier = Modifier.width(16.dp))
-
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = detail.name, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = DarkPurple)
-                Spacer(modifier = Modifier.height(4.dp))
-
-                if (!detail.description.isNullOrEmpty()) {
-                    Text(
-                        text = detail.description,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = Color.Gray
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
+                Text(text = account.name, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = PrimaryText)
+                if (!account.description.isNullOrEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(text = account.description, fontSize = 14.sp, color = SecondaryText)
                 }
-
+                Spacer(modifier = Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Paid,
-                        contentDescription = "Amount Icon",
-                        modifier = Modifier.size(18.dp),
-                        tint = AccentBlue
-                    )
+                    Icon(Icons.Default.Paid, "Amount Icon", Modifier.size(18.dp), tint = PrimaryBlue)
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "Total Spent: ₹${String.format("%.2f", totalAmount)}",
-                        fontWeight = FontWeight.SemiBold,
-                        color = AccentBlue
-                    )
+                    Text("Total Spent: ₹${"%.2f".format(totalAmount ?: 0.0)}", fontWeight = FontWeight.SemiBold, color = PrimaryBlue)
                 }
             }
-
             Column(horizontalAlignment = Alignment.End) {
-                IconButton(onClick = onEditDialog) {
-                    Icon(
-                        Icons.Default.Edit,
-                        contentDescription = "Edit Account info",
-                        tint = MidPurple
-                    )
+                IconButton(onClick = onEdit) {
+                    Icon(Icons.Default.Edit, "Edit Account info", tint = SecondaryText)
                 }
-
-                IconButton(onClick = onDeleteDialog) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Delete Account info",
-                        tint = ErrorColor
-                    )
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, "Delete Account info", tint = ErrorColor)
                 }
             }
         }

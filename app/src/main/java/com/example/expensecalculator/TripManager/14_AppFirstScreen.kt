@@ -14,10 +14,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Flight
-import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,10 +41,7 @@ import androidx.navigation.NavController
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FirstScreen(navController: NavController) {
-    // CHANGED: Background to pure white/light gray
     val backgroundColor = Color(0xFFF8F9FA)
-
-    // Header gradient remains purple-to-blue
     val topBarGradient = Brush.horizontalGradient(
         colors = listOf(Color(0xFF6a11cb), Color(0xFF2575fc))
     )
@@ -59,7 +54,7 @@ fun FirstScreen(navController: NavController) {
                     Text(
                         modifier = Modifier.fillMaxWidth(),
                         text = "Trek & Track",
-                        fontSize = 32.sp, // CHANGED: Increased font size
+                        fontSize = 32.sp,
                         textAlign = TextAlign.Center,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -75,7 +70,7 @@ fun FirstScreen(navController: NavController) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(backgroundColor) // CHANGED
+                .background(backgroundColor)
                 .padding(paddingValues)
         ) {
             Column(
@@ -95,15 +90,17 @@ fun FirstScreen(navController: NavController) {
                         title = "Trip Manager",
                         description = "Plan and track your travel expenses",
                         icon = Icons.Default.Flight,
-                        onClick = { navController.navigate("trip_details") },
-                        color = Color(0xFF1E88E5) // CHANGED: Deep teal blue
+                        // CORRECTED: Route changed from "trip_details" to "trip_main"
+                        onClick = { navController.navigate("trip_main") },
+                        color = Color(0xFF1E88E5)
                     )
                     FeatureCard(
                         title = "Account Manager",
                         description = "Manage your daily expenses and accounts",
                         icon = Icons.Default.AccountBalance,
-                        onClick = { navController.navigate("detail_screen") },
-                        color = Color(0xFF673AB7) // CHANGED: Rich purple
+                        // CORRECTED: Route changed from "detail_screen" to "main_screen"
+                        onClick = { navController.navigate("main_screen") },
+                        color = Color(0xFF673AB7)
                     )
                 }
             }
@@ -119,15 +116,15 @@ fun WelcomeSection() {
     ) {
         Text(
             text = "Welcome",
-            fontSize = 36.sp, // CHANGED: Increased font size
+            fontSize = 36.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF212529), // CHANGED: Darker for clarity
+            color = Color(0xFF212529),
             textAlign = TextAlign.Center
         )
         Text(
             text = "Manage your finances efficiently",
-            fontSize = 18.sp, // CHANGED: Increased font size
-            color = Color(0xFF343A40), // CHANGED: Darker for clarity
+            fontSize = 18.sp,
+            color = Color(0xFF343A40),
             textAlign = TextAlign.Center
         )
     }
@@ -146,7 +143,7 @@ fun FeatureCard(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(140.dp), // CHANGED: Increased height for readability
+            .height(140.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = color.copy(alpha = 0.95f)
@@ -163,10 +160,9 @@ fun FeatureCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // CHANGED: Larger icon and clearer background contrast
             Box(
                 modifier = Modifier
-                    .size(70.dp) // CHANGED: Increased size
+                    .size(70.dp)
                     .clip(CircleShape)
                     .background(
                         Brush.radialGradient(
@@ -178,24 +174,23 @@ fun FeatureCard(
                 Icon(
                     imageVector = icon,
                     contentDescription = title,
-                    modifier = Modifier.size(36.dp), // CHANGED: Increased size
+                    modifier = Modifier.size(36.dp),
                     tint = Color.White
                 )
             }
-
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp) // CHANGED: More spacing
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(
                     text = title,
-                    fontSize = 22.sp, // CHANGED: Increased font size
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
                 Text(
                     text = description,
-                    fontSize = 16.sp, // CHANGED: Increased font size
+                    fontSize = 16.sp,
                     color = Color.White.copy(alpha = 0.95f),
                     lineHeight = 20.sp
                 )

@@ -3,6 +3,7 @@ package com.example.expensecalculator
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -21,7 +22,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -29,18 +29,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.expensecalculator.Data.Expense
-import com.example.expensecalculator.TripManager.AccentBlue
-import com.example.expensecalculator.TripManager.DarkPurple
+// --- NEW: Importing the public colors directly from the TripManager package ---
 import com.example.expensecalculator.TripManager.ErrorColor
-import com.example.expensecalculator.TripManager.MidPurple
-import com.example.expensecalculator.TripManager.OffWhite
-import com.example.expensecalculator.TripManager.TextPrimary
-import com.example.expensecalculator.ui.theme.*
+import com.example.expensecalculator.TripManager.IconBackground
+import com.example.expensecalculator.TripManager.PrimaryBlue
+import com.example.expensecalculator.TripManager.PrimaryText
+import com.example.expensecalculator.TripManager.ScreenBackground
+import com.example.expensecalculator.TripManager.SecondaryText
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExpenseScreen(
-    viewModel: viewModel,
+    viewModel: ExpenseViewModel, // Assuming this is your ExpenseViewModel
     accountId: Int,
     onNavigateBack: () -> Unit
 ) {
@@ -52,6 +53,7 @@ fun ExpenseScreen(
     val copyCurrentExpense = currentExpense
 
     if (showAddExpenseDialog) {
+        // NOTE: You'll need to update your addExpense dialog to use the new theme colors
         addExpense(
             accountId = accountId,
             onDismissRequest = { showAddExpenseDialog = false },
@@ -63,6 +65,7 @@ fun ExpenseScreen(
     }
 
     if (showEditDialog && copyCurrentExpense != null) {
+        // NOTE: You'll need to update your editExpense dialog to use the new theme colors
         editExpense(
             expense = copyCurrentExpense,
             onDismissRequest = { showEditDialog = false },
@@ -74,7 +77,7 @@ fun ExpenseScreen(
     }
 
     Scaffold(
-        modifier = Modifier.fillMaxSize().background(OffWhite),
+        modifier = Modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
                 title = { Text("Account Expenses", fontWeight = FontWeight.Bold) },
@@ -83,32 +86,27 @@ fun ExpenseScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = TextPrimary
+                            tint = PrimaryText
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    titleContentColor = TextPrimary
-                ),
-                modifier = Modifier.background(
-                    Brush.horizontalGradient(
-                        colors = listOf(DarkPurple, MidPurple)
-                    )
+                    containerColor = ScreenBackground,
+                    titleContentColor = PrimaryText
                 )
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showAddExpenseDialog = true },
-                containerColor = AccentBlue,
-                contentColor = TextPrimary,
+                containerColor = PrimaryBlue,
+                contentColor = Color.White,
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add an Expense")
             }
         },
-        floatingActionButtonPosition = FabPosition.End
+        containerColor = ScreenBackground
     ) { innerPadding ->
         if (expenseList.isEmpty()) {
             EmptyState(modifier = Modifier.padding(innerPadding))
@@ -147,10 +145,8 @@ fun ExpenseItemCard(
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.98f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ), label = ""
+        animationSpec = spring(dampingRatio = 0.8f, stiffness = 400f),
+        label = "scale"
     )
 
     Card(
@@ -162,9 +158,9 @@ fun ExpenseItemCard(
                 indication = null,
                 onClick = onEdit
             ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f))
     ) {
         Row(
             modifier = Modifier
@@ -173,14 +169,14 @@ fun ExpenseItemCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Default.Receipt,
+                imageVector = Icons.Default.ReceiptLong,
                 contentDescription = "Expense Icon",
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(AccentBlue.copy(alpha = 0.1f))
+                    .background(IconBackground)
                     .padding(10.dp),
-                tint = AccentBlue
+                tint = PrimaryBlue
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -188,15 +184,15 @@ fun ExpenseItemCard(
                     text = "₹${"%.2f".format(expense.amount)}",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = DarkPurple
+                    color = PrimaryText
                 )
-                if (!expense.description.isNullOrEmpty()) {
+                if (expense.description.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = expense.description,
+                        text = expense.description.toString(),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Normal,
-                        color = Color.Gray
+                        color = SecondaryText
                     )
                 }
             }
@@ -205,7 +201,7 @@ fun ExpenseItemCard(
                     Icon(
                         Icons.Default.Edit,
                         contentDescription = "Edit Expense",
-                        tint = MidPurple
+                        tint = SecondaryText
                     )
                 }
                 IconButton(onClick = onDelete) {
@@ -233,20 +229,20 @@ fun EmptyState(modifier: Modifier = Modifier) {
             imageVector = Icons.Default.HourglassEmpty,
             contentDescription = "Empty List",
             modifier = Modifier.size(64.dp),
-            tint = MidPurple.copy(alpha = 0.6f)
+            tint = SecondaryText.copy(alpha = 0.6f)
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "No expenses recorded yet.",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = DarkPurple
+            color = PrimaryText
         )
         Text(
             text = "Tap the '+' button to add your first one.",
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
-            color = Color.Gray
+            color = SecondaryText
         )
     }
 }

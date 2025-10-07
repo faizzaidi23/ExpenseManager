@@ -1,107 +1,50 @@
 package com.example.expensecalculator.tripData
 
-import androidx.room.Dao
-import androidx.room.Delete
-import androidx.room.Insert
-import androidx.room.Query
-import androidx.room.Transaction
-import androidx.room.Update
+import androidx.room.*
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TripDao {
 
-    // ==================== TRIP OPERATIONS ====================
+    // ==================== TRIP & PARTICIPANT OPERATIONS ====================
     @Insert
-    suspend fun addTrip(trip: Trip): Long // Returns the ID of inserted trip
-
-    @Delete
-    suspend fun deleteTrip(trip: Trip)
-
+    suspend fun addTrip(trip: Trip): Long
     @Update
     suspend fun updateTrip(trip: Trip)
-
+    @Delete
+    suspend fun deleteTrip(trip: Trip)
     @Query("SELECT * FROM trips ORDER BY id DESC")
     fun showAllTrips(): Flow<List<Trip>>
 
-    @Query("SELECT * FROM trips WHERE id = :tripId")
-    suspend fun getTripById(tripId: Int): Trip?
-
-    // ==================== PARTICIPANT OPERATIONS ====================
-    @Insert
-    suspend fun addParticipant(participant: TripParticipant)
-
     @Insert
     suspend fun addParticipants(participants: List<TripParticipant>)
-
-    @Delete
-    suspend fun deleteParticipant(participant: TripParticipant)
-
-    @Update
-    suspend fun updateParticipant(participant: TripParticipant)
-
-    @Query("SELECT * FROM trip_participants WHERE tripId = :tripId")
-    suspend fun getParticipantsByTripId(tripId: Int): List<TripParticipant>
-
-    @Query("SELECT * FROM trip_participants WHERE tripId = :tripId")
-    fun getParticipantsByTripIdFlow(tripId: Int): Flow<List<TripParticipant>>
-
     @Query("DELETE FROM trip_participants WHERE tripId = :tripId")
     suspend fun deleteAllParticipantsForTrip(tripId: Int)
 
-    // ==================== EXPENSE OPERATIONS ====================
+    // ==================== EXPENSE & SPLIT OPERATIONS ====================
     @Insert
-    suspend fun addExpense(expense: TripExpense)
-
-    @Insert
-    suspend fun addExpenses(expenses: List<TripExpense>)
+    suspend fun addExpense(expense: TripExpense): Long
 
     @Delete
     suspend fun deleteExpense(expense: TripExpense)
 
-    @Update
-    suspend fun updateExpense(expense: TripExpense)
-
-    @Query("SELECT * FROM tripExpense WHERE tripId = :tripId ORDER BY id DESC")
-    suspend fun getExpensesByTripId(tripId: Int): List<TripExpense>
+    @Insert
+    suspend fun addSplits(splits: List<ExpenseSplit>)
 
     @Query("SELECT * FROM tripExpense WHERE tripId = :tripId ORDER BY id DESC")
     fun getExpensesByTripIdFlow(tripId: Int): Flow<List<TripExpense>>
 
-    @Query("DELETE FROM tripExpense WHERE tripId = :tripId")
-    suspend fun deleteAllExpensesForTrip(tripId: Int)
 
     // ==================== COMBINED QUERIES ====================
-    @Transaction
-    @Query("SELECT * FROM trips WHERE id = :tripId")
-    suspend fun getTripWithParticipants(tripId: Int): TripWithParticipants?
-
-    @Transaction
-    @Query("SELECT * FROM trips WHERE id = :tripId")
-    suspend fun getTripWithExpenses(tripId: Int): TripWithExpenses?
-
+    // --- ADDED: The missing suspend function ---
     @Transaction
     @Query("SELECT * FROM trips WHERE id = :tripId")
     suspend fun getCompleteTripDetails(tripId: Int): CompleteTripDetails?
 
-    // ⭐ ADDED: Flow version for real-time updates
     @Transaction
     @Query("SELECT * FROM trips WHERE id = :tripId")
     fun getCompleteTripDetailsFlow(tripId: Int): Flow<CompleteTripDetails?>
 
-    @Transaction
-    @Query("SELECT * FROM trips ORDER BY id DESC")
-    fun getAllTripsWithParticipants(): Flow<List<TripWithParticipants>>
-
-    // ==================== UTILITY QUERIES ====================
-    @Query("SELECT COUNT(*) FROM trip_participants WHERE tripId = :tripId")
-    suspend fun getParticipantCount(tripId: Int): Int
-
-    @Query("SELECT SUM(amount) FROM tripExpense WHERE tripId = :tripId")
-    suspend fun getTotalExpenseForTrip(tripId: Int): Double?
-
-    @Query("SELECT participantName FROM trip_participants WHERE tripId = :tripId")
-    suspend fun getParticipantNames(tripId: Int): List<String>
 
     // ==================== TRANSACTION METHODS ====================
     @Transaction
@@ -114,9 +57,24 @@ interface TripDao {
     }
 
     @Transaction
-    suspend fun deleteTripCompletely(trip: Trip) {
+    suspend fun updateTripWithParticipants(trip: Trip, participantNames: List<String>) {
+        updateTrip(trip)
         deleteAllParticipantsForTrip(trip.id)
-        deleteAllExpensesForTrip(trip.id)
+        val newParticipants = participantNames.map { name ->
+            TripParticipant(tripId = trip.id, participantName = name)
+        }
+        addParticipants(newParticipants)
+    }
+
+    @Transaction
+    suspend fun addExpenseWithSplits(expense: TripExpense, splits: List<ExpenseSplit>) {
+        val expenseId = addExpense(expense)
+        val splitsWithExpenseId = splits.map { it.copy(expenseId = expenseId.toInt()) }
+        addSplits(splitsWithExpenseId)
+    }
+
+    @Transaction
+    suspend fun deleteTripCompletely(trip: Trip) {
         deleteTrip(trip)
     }
 }

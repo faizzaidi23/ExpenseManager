@@ -1,24 +1,16 @@
 package com.example.expensecalculator
 
-import NavGraph
+
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.ViewModelProvider
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import com.example.expensecalculator.Authentication.AuthNavigator
 import com.example.expensecalculator.Data.ExpenseDatabase
 import com.example.expensecalculator.TripManager.TripRepository
@@ -30,18 +22,23 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val db= ExpenseDatabase.getDatabase(this)
-        val detailDao=db.detailDao()
-        val expenseDao=db.expenseDao()
-        val tripDao=db.tripDao()
+        // --- UPDATED: Using all the new, renamed components ---
 
-        // Create a separate repo for each dao
-        val repository= repository(detailsDao = detailDao, expenseDao = expenseDao)
+        // 1. Get the database instance
+        val db = ExpenseDatabase.getDatabase(this)
 
-        val repository2= TripRepository(tripDao = tripDao)
+        // 2. Get all the DAOs from the database
+        val accountDao = db.accountDao() // Changed from detailDao()
+        val expenseDao = db.expenseDao()
+        val tripDao = db.tripDao()
 
-        val factory= AppViewModelFactory(repository = repository)
-        val factory2= TripViewModelFactory(repository = repository2)
+        // 3. Create a separate repository for each feature
+        val expenseRepository = ExpenseRepository(accountDao = accountDao, expenseDao = expenseDao) // Renamed
+        val tripRepository = TripRepository(tripDao = tripDao)
+
+        // 4. Create a factory for each ViewModel
+        val expenseViewModelFactory = ExpenseViewModelFactory(repository = expenseRepository) // Renamed
+        val tripViewModelFactory = TripViewModelFactory(repository = tripRepository)
 
         enableEdgeToEdge()
         setContent {
@@ -50,19 +47,18 @@ class MainActivity : ComponentActivity() {
                 var isLoggedIn by remember { mutableStateOf(false) }
 
                 if (isLoggedIn) {
-                    // --- If logged in, show your main Expense Calculator App ---
-                    val variableViewModel: viewModel = viewModel(factory = factory)
-                    val tripViewModel: TripViewModel = viewModel(factory = factory2)
+                    // --- If logged in, show your main app ---
+                    val expenseViewModel: ExpenseViewModel = viewModel(factory = expenseViewModelFactory) // Renamed
+                    val tripViewModel: TripViewModel = viewModel(factory = tripViewModelFactory)
                     val navController = rememberNavController()
+
                     NavGraph(
                         navController = navController,
-                        viewModel = variableViewModel,
+                        expenseViewModel = expenseViewModel, // Pass the correctly named ViewModel
                         tripViewModel = tripViewModel
                     )
                 } else {
                     // --- If not logged in, show the Authentication Flow ---
-                    // When onLoginSuccess is called, it will set isLoggedIn to true,
-                    // which recomposes MainActivity and shows the NavGraph.
                     AuthNavigator(onLoginSuccess = {
                         isLoggedIn = true
                     })
