@@ -241,7 +241,7 @@ fun LoginScreen(
                         enabled = !viewModel.isLoading,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(50.dp),
+                            .height(55.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = PrimaryBlue,
@@ -250,7 +250,7 @@ fun LoginScreen(
                     ) {
                         if (viewModel.isLoading) {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
+                                modifier = Modifier.size(28.dp),
                                 color = Color.White
                             )
                         } else {

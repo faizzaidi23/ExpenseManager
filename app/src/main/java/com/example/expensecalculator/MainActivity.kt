@@ -22,43 +22,37 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // --- UPDATED: Using all the new, renamed components ---
-
-        // 1. Get the database instance
         val db = ExpenseDatabase.getDatabase(this)
 
-        // 2. Get all the DAOs from the database
-        val accountDao = db.accountDao() // Changed from detailDao()
+        val accountDao = db.accountDao()
         val expenseDao = db.expenseDao()
         val tripDao = db.tripDao()
 
-        // 3. Create a separate repository for each feature
         val expenseRepository = ExpenseRepository(accountDao = accountDao, expenseDao = expenseDao) // Renamed
         val tripRepository = TripRepository(tripDao = tripDao)
 
-        // 4. Create a factory for each ViewModel
+
         val expenseViewModelFactory = ExpenseViewModelFactory(repository = expenseRepository) // Renamed
         val tripViewModelFactory = TripViewModelFactory(repository = tripRepository)
 
         enableEdgeToEdge()
         setContent {
             ExpenseCalculatorTheme {
-                // State to track if the user is logged in
+
                 var isLoggedIn by remember { mutableStateOf(false) }
 
                 if (isLoggedIn) {
-                    // --- If logged in, show your main app ---
+
                     val expenseViewModel: ExpenseViewModel = viewModel(factory = expenseViewModelFactory) // Renamed
                     val tripViewModel: TripViewModel = viewModel(factory = tripViewModelFactory)
                     val navController = rememberNavController()
 
                     NavGraph(
                         navController = navController,
-                        expenseViewModel = expenseViewModel, // Pass the correctly named ViewModel
+                        expenseViewModel = expenseViewModel,
                         tripViewModel = tripViewModel
                     )
                 } else {
-                    // --- If not logged in, show the Authentication Flow ---
                     AuthNavigator(onLoginSuccess = {
                         isLoggedIn = true
                     })
