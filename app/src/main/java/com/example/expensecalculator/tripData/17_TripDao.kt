@@ -34,6 +34,11 @@ interface TripDao {
     @Query("SELECT * FROM tripExpense WHERE tripId = :tripId ORDER BY id DESC")
     fun getExpensesByTripIdFlow(tripId: Int): Flow<List<TripExpense>>
 
+    // --- NEW: Get a single expense with its splits by expense ID ---
+    @Transaction
+    @Query("SELECT * FROM tripExpense WHERE id = :expenseId")
+    fun getExpenseWithSplitsByIdFlow(expenseId: Int): Flow<ExpenseWithSplits?>
+
 
     // ==================== COMBINED QUERIES ====================
     // --- ADDED: The missing suspend function ---

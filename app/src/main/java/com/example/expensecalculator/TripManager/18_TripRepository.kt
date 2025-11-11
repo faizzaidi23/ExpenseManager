@@ -39,4 +39,9 @@ class TripRepository(private val tripDao: TripDao) {
     suspend fun deleteExpense(expense: TripExpense) {
         tripDao.deleteExpense(expense)
     }
+
+    // --- NEW: Get a single expense with its splits ---
+    fun getExpenseWithSplitsById(expenseId: Int): Flow<ExpenseWithSplits?> {
+        return tripDao.getExpenseWithSplitsByIdFlow(expenseId)
+    }
 }

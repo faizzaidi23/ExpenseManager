@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.expensecalculator.tripData.CompleteTripDetails
 import com.example.expensecalculator.tripData.ExpenseSplit
+import com.example.expensecalculator.tripData.ExpenseWithSplits
 import com.example.expensecalculator.tripData.Trip
 import com.example.expensecalculator.tripData.TripExpense
 import com.example.expensecalculator.tripData.TripParticipant
@@ -137,6 +138,12 @@ class TripViewModel(private val repository: TripRepository) : ViewModel() {
         viewModelScope.launch {
             repository.deleteExpense(expense)
         }
+    }
+
+    // --- NEW: Get a single expense with its splits ---
+    fun getExpenseWithSplitsById(expenseId: Int): StateFlow<ExpenseWithSplits?> {
+        return repository.getExpenseWithSplitsById(expenseId)
+            .stateIn(viewModelScope, SharingStarted.Lazily, null)
     }
 }
 

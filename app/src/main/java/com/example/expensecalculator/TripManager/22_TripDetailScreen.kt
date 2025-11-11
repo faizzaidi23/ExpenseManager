@@ -196,7 +196,10 @@ fun TripDetailScreen(
                 when (selectedTabIndex) {
                     0 -> ExpensesContent(
                         expensesWithSplits = completeTripDetails?.expensesWithSplits ?: emptyList(),
-                        onDeleteExpense = { viewModel.deleteExpense(it) }
+                        onDeleteExpense = { viewModel.deleteExpense(it) },
+                        onExpenseClick = { expenseId ->
+                            navController.navigate("trip_expense_detail/$expenseId")
+                        }
                     )
                     1 -> BalancesContent(balances = tripBalances)
                     2 -> TripDetailEmptyState(
@@ -244,7 +247,8 @@ fun TripDetailScreen(
 @Composable
 fun ExpensesContent(
     expensesWithSplits: List<com.example.expensecalculator.tripData.ExpenseWithSplits>,
-    onDeleteExpense: (TripExpense) -> Unit
+    onDeleteExpense: (TripExpense) -> Unit,
+    onExpenseClick: (Int) -> Unit = {}
 ) {
     if (expensesWithSplits.isEmpty()) {
         TripDetailEmptyState(
@@ -293,7 +297,8 @@ fun ExpensesContent(
                 items(expenses) { expenseWithSplits ->
                     ExpenseCard(
                         expense = expenseWithSplits.expense,
-                        onDelete = { onDeleteExpense(expenseWithSplits.expense) }
+                        onDelete = { onDeleteExpense(expenseWithSplits.expense) },
+                        onClick = { onExpenseClick(expenseWithSplits.expense.id) }
                     )
                 }
             }
@@ -438,9 +443,15 @@ private fun TripDetailEmptyState(icon: ImageVector, title: String, subtitle: Str
 }
 
 @Composable
-fun ExpenseCard(expense: TripExpense, onDelete: () -> Unit) {
+fun ExpenseCard(
+    expense: TripExpense,
+    onDelete: () -> Unit,
+    onClick: () -> Unit = {}
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         shape = MaterialTheme.shapes.small,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))

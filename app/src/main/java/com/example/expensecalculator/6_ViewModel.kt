@@ -61,6 +61,10 @@ class ExpenseViewModel(private val repository: ExpenseRepository):ViewModel(){
     fun getExpensesForAccount(accountId: Int): Flow<List<Expense>> {
         return repository.getExpensesForAccount(accountId = accountId)
     }
+
+    fun getExpenseById(expenseId: Int): Flow<Expense?> {
+        return repository.getExpenseById(expenseId = expenseId)
+    }
 }
 
 // Renamed from 'AppViewModelFactory' to 'ExpenseViewModelFactory'

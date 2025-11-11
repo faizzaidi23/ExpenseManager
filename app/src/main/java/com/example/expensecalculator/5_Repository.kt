@@ -45,4 +45,8 @@ class ExpenseRepository(private val accountDao: AccountDao, private val expenseD
     fun getExpensesForAccount(accountId:Int):Flow<List<Expense>>{
         return expenseDao.getExpensesForAccount(accountId=accountId)
     }
+
+    fun getExpenseById(expenseId: Int): Flow<Expense?> {
+        return expenseDao.getExpenseById(expenseId = expenseId)
+    }
 }

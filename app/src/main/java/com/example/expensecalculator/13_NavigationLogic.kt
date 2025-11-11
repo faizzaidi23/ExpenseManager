@@ -1,6 +1,8 @@
 package com.example.expensecalculator
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -9,6 +11,7 @@ import androidx.navigation.navArgument
 import com.example.expensecalculator.TripManager.AddTripScreen
 import com.example.expensecalculator.TripManager.FirstScreen
 import com.example.expensecalculator.TripManager.TripDetailScreen
+import com.example.expensecalculator.TripManager.TripExpenseDetailScreen
 import com.example.expensecalculator.TripManager.TripMainScreen
 import com.example.expensecalculator.TripManager.TripViewModel
 
@@ -61,6 +64,24 @@ fun NavGraph(
             }
         }
 
+        // --- NEW: Trip Expense Detail Route ---
+        composable(
+            route = "trip_expense_detail/{expenseId}",
+            arguments = listOf(navArgument("expenseId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val expenseId = backStackEntry.arguments?.getInt("expenseId")
+            if (expenseId != null) {
+                val expenseWithSplits by tripViewModel.getExpenseWithSplitsById(expenseId).collectAsState(initial = null)
+                expenseWithSplits?.let { expWithSplits ->
+                    TripExpenseDetailScreen(
+                        navController = navController,
+                        viewModel = tripViewModel,
+                        expenseWithSplits = expWithSplits
+                    )
+                }
+            }
+        }
+
         composable(
             route = "expense_screen/{accountId}", // Renamed from detailId
             arguments = listOf(navArgument("accountId") { type = NavType.IntType })
@@ -70,8 +91,35 @@ fun NavGraph(
                 ExpenseScreen(
                     viewModel = expenseViewModel,
                     accountId = id,
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToDetail = { expense ->
+                        navController.navigate("expense_detail/${expense.id}")
+                    }
                 )
+            }
+        }
+
+        composable(
+            route = "expense_detail/{expenseId}",
+            arguments = listOf(navArgument("expenseId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val expenseId = backStackEntry.arguments?.getInt("expenseId")
+            if (expenseId != null) {
+                val expense by expenseViewModel.getExpenseById(expenseId).collectAsState(initial = null)
+                expense?.let { exp ->
+                    ExpenseDetailScreen(
+                        expense = exp,
+                        onNavigateBack = { navController.popBackStack() },
+                        onEdit = {
+                            navController.popBackStack()
+                            // The edit dialog will be shown in the expense screen
+                        },
+                        onDelete = {
+                            expenseViewModel.deleteExpense(exp)
+                            navController.popBackStack()
+                        }
+                    )
+                }
             }
         }
     }
