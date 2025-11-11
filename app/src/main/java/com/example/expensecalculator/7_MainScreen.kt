@@ -1,8 +1,6 @@
 package com.example.expensecalculator
 
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -11,7 +9,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -21,25 +18,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.expensecalculator.Data.Account
-// --- CORRECTED IMPORTS ---
-import com.example.expensecalculator.TripManager.ErrorColor
-import com.example.expensecalculator.TripManager.IconBackground
-import com.example.expensecalculator.TripManager.PrimaryBlue
-import com.example.expensecalculator.TripManager.PrimaryText
-import com.example.expensecalculator.TripManager.ScreenBackground
-import com.example.expensecalculator.TripManager.SecondaryText
+import com.example.expensecalculator.ui.theme.IconBackground
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(navController: NavController, viewModel: ExpenseViewModel) {
 
-    // Added initial value for safety
     val accountsList by viewModel.allAccounts.collectAsState(initial = emptyList())
     var showAddAccountDialog by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
@@ -47,7 +35,6 @@ fun MainScreen(navController: NavController, viewModel: ExpenseViewModel) {
     val accountCopy = currentAccount
 
     if (showAddAccountDialog) {
-        // Renamed for consistency
         AddAccount(
             onDismissRequest = { showAddAccountDialog = false },
             onSave = { account ->
@@ -71,29 +58,41 @@ fun MainScreen(navController: NavController, viewModel: ExpenseViewModel) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Expense Accounts", fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        "Expense Accounts",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Go back", tint = PrimaryText)
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Go back",
+                            tint = MaterialTheme.colorScheme.onBackground
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = ScreenBackground,
-                    titleContentColor = PrimaryText
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showAddAccountDialog = true },
-                containerColor = PrimaryBlue,
-                contentColor = Color.White,
-                shape = RoundedCornerShape(16.dp)
+                containerColor = MaterialTheme.colorScheme.primary,
+                shape = MaterialTheme.shapes.medium
             ) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = "Add new Expense Account")
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add new Expense Account",
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
             }
         },
-        containerColor = ScreenBackground
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerpadding ->
         if (accountsList.isEmpty()) {
             Box(
@@ -102,13 +101,20 @@ fun MainScreen(navController: NavController, viewModel: ExpenseViewModel) {
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
-                        Icons.Default.AccountBalanceWallet, "No Accounts",
-                        tint = SecondaryText.copy(alpha = 0.7f),
+                        Icons.Default.AccountBalanceWallet,
+                        "No Accounts",
+                        tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                         modifier = Modifier.size(64.dp)
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("No Accounts Yet", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = PrimaryText)
-                    Text("Tap the '+' button to add your first account.", style = MaterialTheme.typography.bodyLarge, color = SecondaryText)
+                    Text(
+                        "No Accounts Yet",
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                    Text(
+                        "Tap the '+' button to add your first account.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
             }
         } else {
@@ -140,7 +146,6 @@ fun MainScreen(navController: NavController, viewModel: ExpenseViewModel) {
     }
 }
 
-
 @Composable
 fun AccountCard(
     account: Account,
@@ -149,7 +154,6 @@ fun AccountCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    // Handled nullable ID safely
     val totalAmount by if (account.id != null) {
         viewModel.getTotalForAccount(account.id).collectAsState(initial = 0.0)
     } else {
@@ -167,8 +171,8 @@ fun AccountCard(
             onClick = onClick
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -179,31 +183,56 @@ fun AccountCard(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    Icons.Default.AccountBalanceWallet, "Account Icon",
-                    tint = PrimaryBlue,
+                    Icons.Default.AccountBalanceWallet,
+                    "Account Icon",
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(30.dp)
                 )
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = account.name, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = PrimaryText)
+                Text(
+                    text = account.name,
+                    style = MaterialTheme.typography.titleSmall
+                )
                 if (!account.description.isNullOrEmpty()) {
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = account.description, fontSize = 14.sp, color = SecondaryText)
+                    Text(
+                        text = account.description,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Paid, "Amount Icon", Modifier.size(18.dp), tint = PrimaryBlue)
+                    Icon(
+                        Icons.Default.Paid,
+                        "Amount Icon",
+                        Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Total Spent: ₹${"%.2f".format(totalAmount ?: 0.0)}", fontWeight = FontWeight.SemiBold, color = PrimaryBlue)
+                    Text(
+                        "Total Spent: ₹${"%.2f".format(totalAmount ?: 0.0)}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
             Column(horizontalAlignment = Alignment.End) {
                 IconButton(onClick = onEdit) {
-                    Icon(Icons.Default.Edit, "Edit Account info", tint = SecondaryText)
+                    Icon(
+                        Icons.Default.Edit,
+                        "Edit",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
                 IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, "Delete Account info", tint = ErrorColor)
+                    Icon(
+                        Icons.Default.Delete,
+                        "Delete",
+                        tint = MaterialTheme.colorScheme.error
+                    )
                 }
             }
         }

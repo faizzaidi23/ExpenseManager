@@ -2,7 +2,6 @@ package com.example.expensecalculator.TripManager
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,19 +25,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.expensecalculator.tripData.Trip
-
+import com.example.expensecalculator.ui.theme.IconBackground
 import java.util.Locale
-
-// 1. Using the dark blue theme's color palette
-
-
-private val CardBackgroundd = Color.White
-
-private val LightText = Color(0xFFE0E0E0)
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,25 +41,23 @@ fun TripMainScreen(
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
-            // 2. Updated TopAppBar for the dark theme
             TopAppBar(
                 title = {
                     Text(
                         text = "Trip Manager",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = DarkBlueBackground
+                    containerColor = MaterialTheme.colorScheme.background
                 ),
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Go back",
-                            tint = Color.White
+                            tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
                 }
@@ -78,7 +66,7 @@ fun TripMainScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { navController.navigate("add_trip") },
-                containerColor = PrimaryBlue,
+                containerColor = MaterialTheme.colorScheme.primary,
                 shape = CircleShape,
                 modifier = Modifier.size(64.dp)
             ) {
@@ -91,7 +79,7 @@ fun TripMainScreen(
             }
         },
         floatingActionButtonPosition = FabPosition.Center,
-        containerColor = DarkBlueBackground // 3. Set the main background to dark blue
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
 
         // Dotted background pattern
@@ -121,21 +109,19 @@ fun TripMainScreen(
                     Icon(
                         Icons.Default.Place,
                         contentDescription = null,
-                        tint = LightText,
+                        tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                         modifier = Modifier.size(60.dp)
                     )
                     Spacer(modifier = Modifier.height(24.dp))
                     Text(
                         "No Trips Yet",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         "Tap the '+' button to add your first trip.",
-                        fontSize = 16.sp,
-                        color = LightText,
+                        style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center
                     )
                 }
@@ -169,8 +155,10 @@ fun SimpleTripItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = CardBackgroundd),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -188,25 +176,23 @@ fun SimpleTripItem(
             ) {
                 Text(
                     text = trip.title.firstOrNull()?.toString()?.uppercase(Locale.getDefault()) ?: "T",
-                    color = PrimaryBlue,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.titleMedium
                 )
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = trip.title,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = PrimaryText
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
             Spacer(modifier = Modifier.width(16.dp))
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
                 contentDescription = "View Trip",
-                tint = SecondaryText.copy(alpha = 0.5f),
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 modifier = Modifier.size(16.dp)
             )
         }
