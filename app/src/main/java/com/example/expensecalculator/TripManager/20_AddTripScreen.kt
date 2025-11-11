@@ -7,25 +7,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.BeachAccess
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-
-// --- THEME COLORS (Copied from other screens for consistency) ---
- val DarkBlueBackground = Color(0xFF1A387E)
-// Added missing color
- val WhiteCard = Color(0xFFFFFFFF)
- val DarkGreyText = Color(0xFF555555)
- val HintGray = Color(0xFF8A8A8A)
- val LightGray = Color(0xFFD3D3D3)
-// --- END THEME COLORS ---
+import com.example.expensecalculator.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,6 +28,7 @@ fun AddTripScreen(
     val isEditMode = tripId != null && tripId != -1
 
     var title by remember { mutableStateOf("") }
+    var selectedCurrency by remember { mutableStateOf("Indian Rupee") }
     val participants = remember { mutableStateListOf("") }
     var isDataLoaded by remember { mutableStateOf(false) }
 
@@ -55,140 +47,182 @@ fun AddTripScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = if (isEditMode) "Edit Trip" else "Add New Trip",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
+                        if (isEditMode) "Edit Trip" else "New Trip",
+                        style = MaterialTheme.typography.titleMedium
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Go back",
-                            tint = Color.White
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = DarkBlueBackground
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
                 )
             )
         },
-        containerColor = DarkBlueBackground
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .padding(20.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = 16.dp),
-                color = WhiteCard,
-                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    SectionTitle(text = "Title")
-                    OutlinedTextField(
-                        value = title,
-                        onValueChange = { title = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("E.g. City Trip", color = HintGray) },
-                        shape = RoundedCornerShape(12.dp),
-                        singleLine = true,
-                        colors = themedTextFieldColors()
+            // Title Section
+            Text(
+                "Title",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+            OutlinedTextField(
+                value = title,
+                onValueChange = { title = it },
+                placeholder = { Text("E.g. City Trip") },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.BeachAccess,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
                     )
-                    Spacer(modifier = Modifier.height(24.dp))
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.small,
+                singleLine = true
+            )
 
-                    SectionTitle(text = "Participants")
-                    participants.forEachIndexed { index, participant ->
-                        OutlinedTextField(
-                            value = participant,
-                            onValueChange = { participants[index] = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Participant name", color = HintGray) },
-                            shape = RoundedCornerShape(12.dp),
-                            singleLine = true,
-                            colors = themedTextFieldColors(),
-                            trailingIcon = {
-                                if (participants.size > 1) {
-                                    IconButton(onClick = { participants.removeAt(index) }) {
-                                        Icon(Icons.Default.Close, "Remove Participant", tint = HintGray)
-                                    }
-                                }
-                            }
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-                    TextButton(
-                        onClick = { participants.add("") },
-                        modifier = Modifier.align(Alignment.Start)
-                    ) {
-                        Text("+ Add Participant", color = PrimaryBlue, fontWeight = FontWeight.Bold)
-                    }
+            // Currency Section
+            Text(
+                "Options",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+            CurrencyDropdown(
+                selected = selectedCurrency,
+                onSelect = { selectedCurrency = it }
+            )
 
-                    Spacer(modifier = Modifier.weight(1f))
-                    Spacer(modifier = Modifier.height(32.dp))
+            // Participants Section
+            Text(
+                "Participants",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold
+            )
 
-                    Button(
-                        onClick = {
-                            val participantNames = participants.filter { it.isNotBlank() }
-                            if (title.isNotBlank() && participantNames.isNotEmpty()) {
-                                // --- CORRECTED: Call the single saveTrip function ---
-                                // It handles both add and edit mode automatically
-                                viewModel.saveTrip(
-                                    tripId = tripId,
-                                    title = title,
-                                    participantNames = participantNames
+            participants.forEachIndexed { index, participant ->
+                OutlinedTextField(
+                    value = participant,
+                    onValueChange = { participants[index] = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Participant name") },
+                    shape = MaterialTheme.shapes.small,
+                    singleLine = true,
+                    trailingIcon = {
+                        if (participants.size > 1) {
+                            IconButton(onClick = { participants.removeAt(index) }) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    "Remove Participant",
+                                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                 )
-                                navController.popBackStack()
                             }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
-                    ) {
-                        Text(
-                            if (isEditMode) "Update Trip" else "Create Trip",
-                            fontWeight = FontWeight.Bold, fontSize = 16.sp
-                        )
+                        }
                     }
-                }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            TextButton(
+                onClick = { participants.add("") }
+            ) {
+                Text(
+                    "Add Participant",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Create/Update Button
+            Button(
+                onClick = {
+                    val participantNames = participants.filter { it.isNotBlank() }
+                    if (title.isNotBlank() && participantNames.isNotEmpty()) {
+                        viewModel.saveTrip(
+                            tripId = tripId,
+                            title = title,
+                            participantNames = participantNames
+                        )
+                        navController.popBackStack()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = MaterialTheme.shapes.small,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text(
+                    if (isEditMode) "Update Trip" else "Create Trip",
+                    fontWeight = FontWeight.Medium,
+                    style = MaterialTheme.typography.bodyLarge
+                )
             }
         }
     }
 }
 
-@Composable
-private fun SectionTitle(text: String) {
-    Text(
-        text = text,
-        color = DarkGreyText,
-        fontWeight = FontWeight.Bold,
-        fontSize = 18.sp,
-        modifier = Modifier.padding(bottom = 8.dp)
-    )
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun themedTextFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = PrimaryBlue,
-    unfocusedBorderColor = LightGray,
-    focusedLabelColor = PrimaryBlue,
-    unfocusedLabelColor = HintGray,
-    cursorColor = PrimaryBlue,
-    unfocusedContainerColor = Color(0xFFF0F0F0),
-    focusedContainerColor = Color(0xFFF0F0F0)
-)
+fun CurrencyDropdown(
+    selected: String,
+    onSelect: (String) -> Unit
+) {
+    val currencies = listOf("Indian Rupee", "US Dollar", "Euro", "Pound Sterling")
+    var expanded by remember { mutableStateOf(false) }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded }
+    ) {
+        OutlinedTextField(
+            value = selected,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Currency") },
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+            },
+            modifier = Modifier
+                .menuAnchor()
+                .fillMaxWidth(),
+            shape = MaterialTheme.shapes.small
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            currencies.forEach { currency ->
+                DropdownMenuItem(
+                    text = { Text(currency) },
+                    onClick = {
+                        onSelect(currency)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
