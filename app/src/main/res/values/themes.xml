@@ -2,4 +2,10 @@
 <resources>
 
     <style name="Theme.ExpenseCalculator" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- Splash theme shown at launch -->
+    <style name="Theme.Splash" parent="Theme.ExpenseCalculator">
+        <item name="android:windowBackground">@drawable/launch_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
 </resources>

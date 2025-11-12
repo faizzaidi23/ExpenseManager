@@ -65,7 +65,7 @@ fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
 
             // App Logo
             Image(
-                painter = painterResource(id = R.drawable.app_logo), // Replace with your logo
+                painter = painterResource(id = R.drawable.ic_launcher), // Replace with your logo
                 contentDescription = "App Logo",
                 modifier = Modifier.size(72.dp)
             )
