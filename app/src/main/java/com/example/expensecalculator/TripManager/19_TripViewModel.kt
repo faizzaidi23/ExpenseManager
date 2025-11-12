@@ -36,10 +36,7 @@ class TripViewModel(private val repository: TripRepository) : ViewModel() {
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
 
-    // --- NEW: This flow automatically calculates balances whenever trip details change ---
-    // It returns a Map where the Key is the participant's name and the Value is their balance.
-    // Positive balance means they are owed money.
-    // Negative balance means they owe money.
+
     val tripBalances: StateFlow<Map<String, Double>> = _completeTripDetails.map { details ->
         if (details == null) {
             emptyMap()
