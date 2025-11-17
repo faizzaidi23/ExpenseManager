@@ -71,8 +71,8 @@ dependencies {
     implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0") // A converter that allows retrofit to use kotlinx Serialization
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0") // A utility to log network request and response details, which is very helpful for debugging
 
-    //splash screen
-    implementation("androidx.core:core-splashscreen:1.2.0")
+    //splash screen - removed the androidx.core:core-splashscreen library to avoid drawable issues
+    //implementation("androidx.core:core-splashscreen:1.0.1")
 
     // Testing
     testImplementation(libs.junit)

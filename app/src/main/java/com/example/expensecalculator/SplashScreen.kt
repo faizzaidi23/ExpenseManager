@@ -14,9 +14,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -113,7 +110,7 @@ fun SplashScreen(
                         )
                 )
 
-                // Icon (replace AppIcon() with your actual icon)
+                // Icon - using a simple gradient circle with "EF" text
                 AppIcon(size = 160.dp)
             }
 
@@ -204,30 +201,30 @@ private fun Dot(offsetY: Float) {
     )
 }
 
-/** Placeholder AppIcon - replace implementation with your actual image or vector */
+/** Simple gradient circle icon with "EF" text - avoids adaptive icon XML loading issues */
 @Composable
 fun AppIcon(size: Dp, modifier: Modifier = Modifier) {
-    // Use the launcher icon directly
-    val painter: Painter? = painterResource(id = R.mipmap.ic_launcher)
-
-    if (painter != null) {
-        Image(
-            painter = painter,
-            contentDescription = "App Icon",
-            modifier = modifier.size(size),
-            contentScale = ContentScale.Fit
+    Box(
+        modifier = modifier
+            .size(size)
+            .clip(CircleShape)
+            .background(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        Color(0xFFB794F6),
+                        Color(0xFF9B59FF),
+                        Color(0xFF7C3AED)
+                    )
+                )
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "EF",
+            fontSize = (size.value * 0.35f).sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
         )
-    } else {
-        // fallback: simple circle with text (quick placeholder)
-        Box(
-            modifier = modifier
-                .size(size)
-                .clip(CircleShape)
-                .background(Color(0xFF6B46C1)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(text = "EF", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 48.sp)
-        }
     }
 }
 

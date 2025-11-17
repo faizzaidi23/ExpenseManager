@@ -6,7 +6,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.*
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.example.expensecalculator.Data.ExpenseDatabase
@@ -17,11 +16,6 @@ import com.example.expensecalculator.ui.theme.ExpenseCalculatorTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Install the AndroidX splash screen handler
-        installSplashScreen()
-
-        // Switch to the normal app theme
-        setTheme(R.style.Theme_ExpenseCalculator)
 
         super.onCreate(savedInstanceState)
 
