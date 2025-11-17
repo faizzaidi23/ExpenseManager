@@ -1,12 +1,19 @@
 package com.example.expensecalculator.TripManager
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -19,13 +26,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.expensecalculator.tripData.TripExpense
 import com.example.expensecalculator.tripData.TripParticipant
+import com.example.expensecalculator.tripData.TripPhoto
 import com.example.expensecalculator.ui.theme.IconBackground
 import com.example.expensecalculator.ui.theme.PositiveBalanceColor
 import com.example.expensecalculator.ui.theme.NegativeBalanceColor
@@ -41,10 +51,20 @@ fun TripDetailScreen(
     val completeTripDetails by viewModel.completeTripDetails.collectAsState()
     val currentTripParticipants by viewModel.currentTripParticipants.collectAsState()
     val tripBalances by viewModel.tripBalances.collectAsState()
+    val currentTripPhotos by viewModel.currentTripPhotos.collectAsState()
 
     var selectedTabIndex by remember { mutableStateOf(0) }
     var showAddExpenseDialog by remember { mutableStateOf(false) }
     var menuExpanded by remember { mutableStateOf(false) }
+
+    // Image picker launcher
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            viewModel.addPhoto(it.toString())
+        }
+    }
 
     LaunchedEffect(tripId) {
         viewModel.setCurrentTrip(tripId)
@@ -202,32 +222,43 @@ fun TripDetailScreen(
                         }
                     )
                     1 -> BalancesContent(balances = tripBalances)
-                    2 -> TripDetailEmptyState(
-                        icon = Icons.Filled.PhotoLibrary,
-                        title = "Photos Coming Soon",
-                        subtitle = "This feature is currently under development."
+                    2 -> PhotosContent(
+                        photos = currentTripPhotos,
+                        onAddPhoto = { imagePickerLauncher.launch("image/*") },
+                        onDeletePhoto = { viewModel.deletePhoto(it) }
                     )
                 }
             }
 
-            // Custom FAB
-            Column(
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                FloatingActionButton(
-                    onClick = { showAddExpenseDialog = true },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    shape = CircleShape
+            // Custom FAB - only show for Expenses and Photos tabs
+            if (selectedTabIndex == 0 || selectedTabIndex == 2) {
+                Column(
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(Icons.Default.Add, "Add Expense", tint = Color.White)
+                    FloatingActionButton(
+                        onClick = {
+                            when (selectedTabIndex) {
+                                0 -> showAddExpenseDialog = true
+                                2 -> imagePickerLauncher.launch("image/*")
+                            }
+                        },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        shape = CircleShape
+                    ) {
+                        Icon(
+                            Icons.Default.Add,
+                            if (selectedTabIndex == 0) "Add Expense" else "Add Photo",
+                            tint = Color.White
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        if (selectedTabIndex == 0) "Add Expense" else "Add Photo",
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        fontSize = 12.sp
+                    )
                 }
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    "Add Expense",
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    fontSize = 12.sp
-                )
             }
         }
     }
@@ -615,4 +646,102 @@ fun AddExpenseDialogWithSplits(
             TextButton(onClick = onDismiss) { Text("Cancel") }
         }
     )
+}
+
+@Composable
+fun PhotosContent(
+    photos: List<TripPhoto>,
+    onAddPhoto: () -> Unit,
+    onDeletePhoto: (TripPhoto) -> Unit
+) {
+    if (photos.isEmpty()) {
+        TripDetailEmptyState(
+            icon = Icons.Default.PhotoLibrary,
+            title = "No Photos Yet",
+            subtitle = "Add photos of your trip by tapping\nthe \"+\" button below"
+        )
+    } else {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(3),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            items(photos) { photo ->
+                PhotoGridItem(
+                    photo = photo,
+                    onDelete = { onDeletePhoto(photo) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun PhotoGridItem(
+    photo: TripPhoto,
+    onDelete: () -> Unit
+) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    Box(
+        modifier = Modifier
+            .aspectRatio(1f)
+            .clip(RoundedCornerShape(8.dp))
+            .clickable { showDeleteDialog = true }
+    ) {
+        AsyncImage(
+            model = Uri.parse(photo.photoUri),
+            contentDescription = "Trip photo",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
+
+        // Delete icon overlay
+        IconButton(
+            onClick = { showDeleteDialog = true },
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(4.dp)
+                .size(28.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                    shape = CircleShape
+                )
+        ) {
+            Icon(
+                Icons.Default.Close,
+                contentDescription = "Delete photo",
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Photo") },
+            text = { Text("Are you sure you want to delete this photo?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onDelete()
+                        showDeleteDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }

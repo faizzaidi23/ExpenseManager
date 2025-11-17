@@ -9,6 +9,7 @@ import com.example.expensecalculator.tripData.ExpenseWithSplits
 import com.example.expensecalculator.tripData.Trip
 import com.example.expensecalculator.tripData.TripExpense
 import com.example.expensecalculator.tripData.TripParticipant
+import com.example.expensecalculator.tripData.TripPhoto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -141,6 +142,29 @@ class TripViewModel(private val repository: TripRepository) : ViewModel() {
     fun getExpenseWithSplitsById(expenseId: Int): StateFlow<ExpenseWithSplits?> {
         return repository.getExpenseWithSplitsById(expenseId)
             .stateIn(viewModelScope, SharingStarted.Lazily, null)
+    }
+
+    // ==================== PHOTO OPERATIONS ====================
+    val currentTripPhotos: StateFlow<List<TripPhoto>> = _completeTripDetails.map {
+        it?.photos ?: emptyList()
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    fun addPhoto(photoUri: String, caption: String? = null) {
+        val tripId = _completeTripDetails.value?.trip?.id ?: return
+        viewModelScope.launch {
+            val photo = TripPhoto(
+                tripId = tripId,
+                photoUri = photoUri,
+                caption = caption
+            )
+            repository.addPhoto(photo)
+        }
+    }
+
+    fun deletePhoto(photo: TripPhoto) {
+        viewModelScope.launch {
+            repository.deletePhoto(photo)
+        }
     }
 }
 

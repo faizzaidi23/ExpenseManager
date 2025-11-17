@@ -44,4 +44,17 @@ class TripRepository(private val tripDao: TripDao) {
     fun getExpenseWithSplitsById(expenseId: Int): Flow<ExpenseWithSplits?> {
         return tripDao.getExpenseWithSplitsByIdFlow(expenseId)
     }
+
+    // ==================== PHOTO OPERATIONS ====================
+    suspend fun addPhoto(photo: TripPhoto): Long {
+        return tripDao.addPhoto(photo)
+    }
+
+    suspend fun deletePhoto(photo: TripPhoto) {
+        tripDao.deletePhoto(photo)
+    }
+
+    fun getPhotosByTripId(tripId: Int): Flow<List<TripPhoto>> {
+        return tripDao.getPhotosByTripIdFlow(tripId)
+    }
 }

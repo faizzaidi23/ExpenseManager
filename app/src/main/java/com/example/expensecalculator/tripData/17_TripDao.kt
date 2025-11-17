@@ -82,4 +82,14 @@ interface TripDao {
     suspend fun deleteTripCompletely(trip: Trip) {
         deleteTrip(trip)
     }
+
+    // ==================== PHOTO OPERATIONS ====================
+    @Insert
+    suspend fun addPhoto(photo: TripPhoto): Long
+
+    @Delete
+    suspend fun deletePhoto(photo: TripPhoto)
+
+    @Query("SELECT * FROM trip_photos WHERE tripId = :tripId ORDER BY timestamp DESC")
+    fun getPhotosByTripIdFlow(tripId: Int): Flow<List<TripPhoto>>
 }

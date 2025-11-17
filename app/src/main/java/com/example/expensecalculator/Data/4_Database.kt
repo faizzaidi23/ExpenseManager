@@ -10,6 +10,7 @@ import com.example.expensecalculator.tripData.Trip
 import com.example.expensecalculator.tripData.TripDao
 import com.example.expensecalculator.tripData.TripExpense
 import com.example.expensecalculator.tripData.TripParticipant
+import com.example.expensecalculator.tripData.TripPhoto
 import java.util.Date
 
 @TypeConverters(Converters::class)
@@ -20,9 +21,10 @@ import java.util.Date
         Trip::class,
         TripParticipant::class,
         TripExpense::class,
-        ExpenseSplit::class // --- 2. ADD: The new entity to the list of tables
+        ExpenseSplit::class,
+        TripPhoto::class
     ],
-    version = 9, // --- 3. FIXED: Incremented the version number (e.g., from 8 to 9) ---
+    version = 10,
     exportSchema = false
 )
 abstract class ExpenseDatabase : RoomDatabase() {

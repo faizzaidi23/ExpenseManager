@@ -61,6 +61,20 @@ data class ExpenseSplit(
     val shareAmount: Double // The amount of this person's share
 )
 
+// --- NEW ENTITY: For storing trip photos ---
+@Entity(
+    tableName = "trip_photos",
+    foreignKeys = [ForeignKey(entity = Trip::class, parentColumns = ["id"], childColumns = ["tripId"], onDelete = ForeignKey.CASCADE)]
+)
+data class TripPhoto(
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
+    val tripId: Int,
+    val photoUri: String, // URI/path to the photo
+    val caption: String? = null,
+    val timestamp: Long = System.currentTimeMillis()
+)
+
 // --- NEW: Helper class to bundle an expense with its splits ---
 data class ExpenseWithSplits(
     @Embedded val expense: TripExpense,
@@ -85,5 +99,10 @@ data class CompleteTripDetails(
         parentColumn = "id",
         entityColumn = "tripId"
     )
-    val expensesWithSplits: List<ExpenseWithSplits>
+    val expensesWithSplits: List<ExpenseWithSplits>,
+    @Relation(
+        parentColumn = "id",
+        entityColumn = "tripId"
+    )
+    val photos: List<TripPhoto> = emptyList()
 )

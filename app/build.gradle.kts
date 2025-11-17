@@ -65,6 +65,9 @@ dependencies {
     implementation(libs.bundles.androidx.room)
     ksp(libs.androidx.room.compiler)
 
+    // Coil - Image Loading Library for Compose
+    implementation("io.coil-kt:coil-compose:2.5.0")
+
     //----Additions for networking
     implementation("com.squareup.retrofit2:retrofit:2.9.0") // The core library for making network requests to your backend
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0") // The library for converting Kotlin objects to and from JSON.
