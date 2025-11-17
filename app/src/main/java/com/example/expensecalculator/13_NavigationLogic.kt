@@ -21,12 +21,14 @@ fun NavGraph(
     expenseViewModel: ExpenseViewModel, // Renamed for clarity
     tripViewModel: TripViewModel
 ){
-    NavHost(navController = navController, startDestination = "first_screen"){
+    NavHost(navController = navController, startDestination = "trip_main"){
 
+        // First screen - kept but not in navigation flow
         composable("first_screen"){
             FirstScreen(navController = navController)
         }
 
+        // Main screen - kept but not in navigation flow
         composable("main_screen"){ // Renamed from detail_screen
             MainScreen(navController = navController, viewModel = expenseViewModel)
         }

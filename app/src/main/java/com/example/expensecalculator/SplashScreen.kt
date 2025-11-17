@@ -1,7 +1,6 @@
 package com.example.expensecalculator
 
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -20,10 +19,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.example.expensecalculator.ui.theme.*
 
 /**
  * SplashScreen composable with:
- * - Gradient purple background
+ * - Gradient blue background matching app theme
  * - Glow behind icon
  * - Staggered animations (entry fade/scale)
  * - Bouncing dots with staggered delays
@@ -80,7 +80,9 @@ fun SplashScreen(
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        Purple900, Purple700, Purple500
+                        BlueGradientStart,
+                        BlueGradientMiddle,
+                        BlueGradientEnd
                     )
                 )
             ),
@@ -110,7 +112,7 @@ fun SplashScreen(
                         )
                 )
 
-                // Icon - using a simple gradient circle with "EF" text
+                // Icon - using app's blue theme
                 AppIcon(size = 160.dp)
             }
 
@@ -119,14 +121,14 @@ fun SplashScreen(
             // App name & subtitle
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = "ExpenseFlow",
+                    text = "Expense Calculator",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color(0xFFFAFAFF)
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Track • Manage • Analyze",
+                    text = "Track • Manage • Save",
                     fontSize = 13.sp,
                     color = Color(0xFFECF0FF)
                 )
@@ -201,7 +203,7 @@ private fun Dot(offsetY: Float) {
     )
 }
 
-/** Simple gradient circle icon with "EF" text - avoids adaptive icon XML loading issues */
+/** App icon with blue gradient matching the app theme */
 @Composable
 fun AppIcon(size: Dp, modifier: Modifier = Modifier) {
     Box(
@@ -211,17 +213,17 @@ fun AppIcon(size: Dp, modifier: Modifier = Modifier) {
             .background(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFFB794F6),
-                        Color(0xFF9B59FF),
-                        Color(0xFF7C3AED)
+                        PrimaryBlueLight,
+                        PrimaryBlue,
+                        PrimaryBlueDark
                     )
                 )
             ),
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "EF",
-            fontSize = (size.value * 0.35f).sp,
+            text = "₹",
+            fontSize = (size.value * 0.45f).sp,
             fontWeight = FontWeight.Bold,
             color = Color.White
         )
@@ -231,7 +233,7 @@ fun AppIcon(size: Dp, modifier: Modifier = Modifier) {
 /** Utility: Overshoot easing created through Interpolator-like behavior */
 private fun OvershootInterpolatorEasing() = CubicBezierEasing(0.2f, 1.5f, 0.5f, 1.0f)
 
-/** --- Colors (use in your Theme) --- */
-private val Purple900 = Color(0xFF3B0D72)
-private val Purple700 = Color(0xFF6B21A8)
-private val Purple500 = Color(0xFF9B59FF)
+/** --- Blue gradient colors for splash screen --- */
+private val BlueGradientStart = Color(0xFF001D3D)
+private val BlueGradientMiddle = Color(0xFF003566)
+private val BlueGradientEnd = Color(0xFF0051D5)

@@ -34,25 +34,16 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         setContent {
-            var showSplash by remember { mutableStateOf(true) }
+            ExpenseCalculatorTheme {
+                val expenseViewModel: ExpenseViewModel = viewModel(factory = expenseViewModelFactory)
+                val tripViewModel: TripViewModel = viewModel(factory = tripViewModelFactory)
+                val navController = rememberNavController()
 
-            if (showSplash) {
-                // Show the animated splash screen
-                SplashScreen(onComplete = { showSplash = false })
-            } else {
-                // Show the main app after splash completes
-                ExpenseCalculatorTheme {
-
-                    val expenseViewModel: ExpenseViewModel = viewModel(factory = expenseViewModelFactory)
-                    val tripViewModel: TripViewModel = viewModel(factory = tripViewModelFactory)
-                    val navController = rememberNavController()
-
-                    NavGraph(
-                        navController = navController,
-                        expenseViewModel = expenseViewModel,
-                        tripViewModel = tripViewModel
-                    )
-                }
+                NavGraph(
+                    navController = navController,
+                    expenseViewModel = expenseViewModel,
+                    tripViewModel = tripViewModel
+                )
             }
         }
     }
