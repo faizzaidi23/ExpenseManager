@@ -30,7 +30,7 @@ class MainActivity : ComponentActivity() {
 
 
         val expenseViewModelFactory = ExpenseViewModelFactory(repository = expenseRepository)
-        val tripViewModelFactory = TripViewModelFactory(repository = tripRepository)
+        val tripViewModelFactory = TripViewModelFactory(repository = tripRepository, context = this)
 
         enableEdgeToEdge()
         setContent {

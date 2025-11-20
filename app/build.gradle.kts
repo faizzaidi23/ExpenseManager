@@ -79,7 +79,7 @@ dependencies {
 
     //Apache POI for Excel export
     implementation("org.apache.poi:poi:5.2.3")
-    implementation("org.apache.poi:poi--ooxml:5.2.3")
+    implementation("org.apache.poi:poi-ooxml:5.2.3")
 
     //For advanced pdfs
     //implementation("com.itextpdf:itext7-core:7.2.5")

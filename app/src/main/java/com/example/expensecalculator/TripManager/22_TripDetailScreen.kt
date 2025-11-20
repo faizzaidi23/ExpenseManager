@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
@@ -31,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.expensecalculator.tripData.TripExpense
@@ -56,6 +58,9 @@ fun TripDetailScreen(
     var selectedTabIndex by remember { mutableStateOf(0) }
     var showAddExpenseDialog by remember { mutableStateOf(false) }
     var menuExpanded by remember { mutableStateOf(false) }
+    var showExportDialog by remember { mutableStateOf(false) }
+    var exportResultUri by remember { mutableStateOf<Uri?>(null) }
+    var showExportResult by remember { mutableStateOf(false) }
 
     // Image picker launcher
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -64,6 +69,25 @@ fun TripDetailScreen(
         uri?.let {
             viewModel.addPhoto(it.toString())
         }
+    }
+
+    // Export dialog
+    if (showExportDialog) {
+        TripExportDialog(
+            onDismiss = { showExportDialog = false },
+            onExport = { format ->
+                viewModel.exportTrip(format) { uri ->
+                    exportResultUri = uri
+                    showExportResult = true
+                }
+            }
+        )
+    }
+
+    // Show export result
+    if (showExportResult) {
+        HandleExportResult(exportResultUri)
+        showExportResult = false
     }
 
     LaunchedEffect(tripId) {
@@ -107,6 +131,15 @@ fun TripDetailScreen(
                             expanded = menuExpanded,
                             onDismissRequest = { menuExpanded = false }
                         ) {
+                            DropdownMenuItem(
+                                text = { Text("Export") },
+                                onClick = {
+                                    menuExpanded = false
+                                    showExportDialog = true
+                                },
+                                leadingIcon = { Icon(Icons.Default.FileDownload, "Export Icon") }
+                            )
+                            HorizontalDivider()
                             DropdownMenuItem(
                                 text = { Text("Edit") },
                                 onClick = {
@@ -492,7 +525,7 @@ fun ExpenseCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                Icons.Default.ReceiptLong,
+                Icons.AutoMirrored.Filled.ReceiptLong,
                 "Expense Icon",
                 modifier = Modifier
                     .size(40.dp)
@@ -692,7 +725,7 @@ fun PhotoGridItem(
             .clickable { showDeleteDialog = true }
     ) {
         AsyncImage(
-            model = Uri.parse(photo.photoUri),
+            model = photo.photoUri.toUri(),
             contentDescription = "Trip photo",
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop

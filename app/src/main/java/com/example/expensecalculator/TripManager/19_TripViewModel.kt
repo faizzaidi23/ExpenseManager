@@ -1,8 +1,12 @@
 package com.example.expensecalculator.TripManager
 
+import android.content.Context
+import android.net.Uri
+import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.expensecalculator.Storage.ExportFormat
 import com.example.expensecalculator.tripData.CompleteTripDetails
 import com.example.expensecalculator.tripData.ExpenseSplit
 import com.example.expensecalculator.tripData.ExpenseWithSplits
@@ -21,7 +25,12 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class TripViewModel(private val repository: TripRepository) : ViewModel() {
+class TripViewModel(
+    private val repository: TripRepository,
+    context: Context
+) : ViewModel() {
+
+    private val exportManager = TripExportManager(context.applicationContext)
 
     val allTrips = repository.getAllTrips()
 
@@ -166,15 +175,41 @@ class TripViewModel(private val repository: TripRepository) : ViewModel() {
             repository.deletePhoto(photo)
         }
     }
+
+    // ==================== EXPORT OPERATIONS ====================
+    fun exportTrip(format: ExportFormat, onComplete: (Uri?) -> Unit) {
+        // Check if Android version supports the export functionality
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            onComplete(null)
+            return
+        }
+
+        val tripDetails = _completeTripDetails.value ?: run {
+            onComplete(null)
+            return
+        }
+
+        viewModelScope.launch {
+            val uri = when (format) {
+                ExportFormat.CSV -> exportManager.exportTripToCSV(tripDetails)
+                ExportFormat.PDF -> exportManager.exportTripToPDF(tripDetails)
+                ExportFormat.EXCEL -> exportManager.exportTripToExcel(tripDetails)
+            }
+            onComplete(uri)
+        }
+    }
 }
 
 
 // ViewModel Factory (No Changes)
-class TripViewModelFactory(private val repository: TripRepository) : ViewModelProvider.Factory {
+class TripViewModelFactory(
+    private val repository: TripRepository,
+    private val context: Context
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(TripViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return TripViewModel(repository) as T
+            return TripViewModel(repository, context) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
