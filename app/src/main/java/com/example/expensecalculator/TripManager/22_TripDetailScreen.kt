@@ -61,6 +61,7 @@ fun TripDetailScreen(
     var showExportDialog by remember { mutableStateOf(false) }
     var exportResultUri by remember { mutableStateOf<Uri?>(null) }
     var showExportResult by remember { mutableStateOf(false) }
+    var showDeleteTripDialog by remember { mutableStateOf(false) }
 
     // Image picker launcher
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -153,10 +154,7 @@ fun TripDetailScreen(
                                 text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
                                 onClick = {
                                     menuExpanded = false
-                                    completeTripDetails?.trip?.let {
-                                        viewModel.deleteTripCompletely(it)
-                                        navController.popBackStack()
-                                    }
+                                    showDeleteTripDialog = true
                                 },
                                 leadingIcon = {
                                     Icon(
@@ -303,6 +301,36 @@ fun TripDetailScreen(
             onAddExpense = { expenseName, amount, paidBy, participantsInSplit ->
                 viewModel.addExpense(expenseName, amount, paidBy, participantsInSplit)
                 showAddExpenseDialog = false
+            }
+        )
+    }
+
+    // Delete trip confirmation dialog
+    if (showDeleteTripDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteTripDialog = false },
+            title = { Text("Delete Trip") },
+            text = { Text("Are you sure you want to delete this trip? This action cannot be undone.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        completeTripDetails?.trip?.let {
+                            viewModel.deleteTripCompletely(it)
+                            navController.popBackStack()
+                        }
+                        showDeleteTripDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteTripDialog = false }) {
+                    Text("Cancel")
+                }
             }
         )
     }
