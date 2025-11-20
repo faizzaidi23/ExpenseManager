@@ -21,7 +21,7 @@ class ExportManager(private val context: Context) {
 
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
 
-    @RequiresApi(Build.VERSION_CODES.Q)
+    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun exportToCSV(expenses: List<Expense>): Uri? = withContext(Dispatchers.IO) {
         try {
             val fileName = "expenses_${System.currentTimeMillis()}.csv"
@@ -53,7 +53,7 @@ class ExportManager(private val context: Context) {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.Q)
+    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun exportToPDF(expenses: List<Expense>): Uri? = withContext(Dispatchers.IO) {
         try {
             val fileName = "expenses_${System.currentTimeMillis()}.pdf"
@@ -103,7 +103,7 @@ class ExportManager(private val context: Context) {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.Q)
+    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun exportToExcel(expenses: List<Expense>): Uri? = withContext(Dispatchers.IO) {
         try {
             val fileName = "expenses_${System.currentTimeMillis()}.xlsx"

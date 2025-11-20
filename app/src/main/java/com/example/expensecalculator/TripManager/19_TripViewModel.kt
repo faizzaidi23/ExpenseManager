@@ -179,7 +179,7 @@ class TripViewModel(
     // ==================== EXPORT OPERATIONS ====================
     fun exportTrip(format: ExportFormat, onComplete: (Uri?) -> Unit) {
         // Check if Android version supports the export functionality
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             onComplete(null)
             return
         }

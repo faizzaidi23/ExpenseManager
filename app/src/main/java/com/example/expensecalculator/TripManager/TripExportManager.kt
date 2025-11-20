@@ -17,7 +17,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook
 
 class TripExportManager(private val context: Context) {
 
-    @RequiresApi(Build.VERSION_CODES.Q)
+    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun exportTripToCSV(tripDetails: CompleteTripDetails): Uri? = withContext(Dispatchers.IO) {
         try {
             val fileName = "${tripDetails.trip.title}_expenses_${System.currentTimeMillis()}.csv"
@@ -71,7 +71,7 @@ class TripExportManager(private val context: Context) {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.Q)
+    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun exportTripToPDF(tripDetails: CompleteTripDetails): Uri? = withContext(Dispatchers.IO) {
         try {
             val fileName = "${tripDetails.trip.title}_expenses_${System.currentTimeMillis()}.pdf"
@@ -154,7 +154,7 @@ class TripExportManager(private val context: Context) {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.Q)
+    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun exportTripToExcel(tripDetails: CompleteTripDetails): Uri? = withContext(Dispatchers.IO) {
         try {
             val fileName = "${tripDetails.trip.title}_expenses_${System.currentTimeMillis()}.xlsx"
