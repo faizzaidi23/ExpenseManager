@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.net.toUri
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
@@ -745,12 +746,13 @@ fun PhotoGridItem(
     onDelete: () -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showFullScreenPhoto by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
             .aspectRatio(1f)
             .clip(RoundedCornerShape(8.dp))
-            .clickable { showDeleteDialog = true }
+            .clickable { showFullScreenPhoto = true }
     ) {
         AsyncImage(
             model = photo.photoUri.toUri(),
@@ -759,15 +761,17 @@ fun PhotoGridItem(
             contentScale = ContentScale.Crop
         )
 
-        // Delete icon overlay
+        // Delete icon overlay - smaller size
         IconButton(
-            onClick = { showDeleteDialog = true },
+            onClick = {
+                showDeleteDialog = true
+            },
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(4.dp)
-                .size(28.dp)
+                .padding(2.dp)
+                .size(20.dp)
                 .background(
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
                     shape = CircleShape
                 )
         ) {
@@ -775,11 +779,20 @@ fun PhotoGridItem(
                 Icons.Default.Close,
                 contentDescription = "Delete photo",
                 tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(12.dp)
             )
         }
     }
 
+    // Full screen photo dialog
+    if (showFullScreenPhoto) {
+        FullScreenPhotoDialog(
+            photoUri = photo.photoUri,
+            onDismiss = { showFullScreenPhoto = false }
+        )
+    }
+
+    // Delete confirmation dialog
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -805,4 +818,39 @@ fun PhotoGridItem(
             }
         )
     }
+}
+
+@Composable
+fun FullScreenPhotoDialog(
+    photoUri: String,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = null,
+        text = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .clip(RoundedCornerShape(8.dp))
+            ) {
+                AsyncImage(
+                    model = photoUri.toUri(),
+                    contentDescription = "Full screen photo",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        },
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+        modifier = Modifier
+            .fillMaxWidth(0.95f)
+            .padding(16.dp)
+    )
 }
