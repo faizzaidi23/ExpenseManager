@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.expensecalculator"
+    namespace = "com.faiz.trekandtrack"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.expensecalculator"
+        applicationId = "com.faiz.trekandtrack"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
