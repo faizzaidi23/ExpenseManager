@@ -231,7 +231,7 @@ fun AccountCard(
                     Icon(
                         Icons.Default.Delete,
                         "Delete",
-                        tint = MaterialTheme.colorScheme.error
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
             }

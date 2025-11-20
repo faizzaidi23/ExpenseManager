@@ -100,7 +100,7 @@ fun ExpenseDetailScreen(
                             )
                             HorizontalDivider()
                             DropdownMenuItem(
-                                text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                                text = { Text("Delete") },
                                 onClick = {
                                     menuExpanded = false
                                     showDeleteDialog = true
@@ -109,7 +109,7 @@ fun ExpenseDetailScreen(
                                     Icon(
                                         Icons.Default.Delete,
                                         "Delete",
-                                        tint = MaterialTheme.colorScheme.error
+                                        tint = MaterialTheme.colorScheme.primary
                                     )
                                 }
                             )
@@ -258,4 +258,3 @@ private fun DetailRow(
         }
     }
 }
-

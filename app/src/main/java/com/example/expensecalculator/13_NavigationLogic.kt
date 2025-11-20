@@ -19,7 +19,8 @@ import com.example.expensecalculator.TripManager.TripViewModel
 fun NavGraph(
     navController: NavHostController,
     expenseViewModel: ExpenseViewModel, // Renamed for clarity
-    tripViewModel: TripViewModel
+    tripViewModel: TripViewModel,
+    themePreferences: ThemePreferences
 ){
     NavHost(navController = navController, startDestination = "trip_main"){
 
@@ -34,7 +35,7 @@ fun NavGraph(
         }
 
         composable("trip_main"){ // Renamed from trip_details
-            TripMainScreen(navController = navController, viewModel = tripViewModel)
+            TripMainScreen(navController = navController, viewModel = tripViewModel, themePreferences = themePreferences)
         }
 
         // --- UPDATED: Combined Add/Edit Trip Route ---

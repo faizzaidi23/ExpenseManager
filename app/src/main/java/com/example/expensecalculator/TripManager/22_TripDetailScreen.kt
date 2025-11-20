@@ -1,5 +1,6 @@
 package com.example.expensecalculator.TripManager
 
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -28,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -51,6 +53,7 @@ fun TripDetailScreen(
     viewModel: TripViewModel,
     tripId: Int
 ) {
+    val context = LocalContext.current
     val completeTripDetails by viewModel.completeTripDetails.collectAsState()
     val currentTripParticipants by viewModel.currentTripParticipants.collectAsState()
     val tripBalances by viewModel.tripBalances.collectAsState()
@@ -69,6 +72,15 @@ fun TripDetailScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
+            // Take persistent URI permission
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    it,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (e: Exception) {
+                // Permission already granted or not available
+            }
             viewModel.addPhoto(it.toString())
         }
     }
@@ -152,7 +164,7 @@ fun TripDetailScreen(
                             )
                             HorizontalDivider()
                             DropdownMenuItem(
-                                text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                                text = { Text("Delete") },
                                 onClick = {
                                     menuExpanded = false
                                     showDeleteTripDialog = true
@@ -161,7 +173,7 @@ fun TripDetailScreen(
                                     Icon(
                                         Icons.Default.Delete,
                                         "Delete Icon",
-                                        tint = MaterialTheme.colorScheme.error
+                                        tint = MaterialTheme.colorScheme.primary
                                     )
                                 }
                             )
@@ -778,7 +790,7 @@ fun PhotoGridItem(
             Icon(
                 Icons.Default.Close,
                 contentDescription = "Delete photo",
-                tint = MaterialTheme.colorScheme.error,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(12.dp)
             )
         }

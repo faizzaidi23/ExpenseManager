@@ -11,12 +11,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,17 +23,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.expensecalculator.ThemePreferences
 import com.example.expensecalculator.tripData.Trip
 import com.example.expensecalculator.ui.theme.IconBackground
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TripMainScreen(
     navController: NavController,
-    viewModel: TripViewModel
+    viewModel: TripViewModel,
+    themePreferences: ThemePreferences
 ) {
     val trips by viewModel.allTrips.collectAsState(initial = emptyList())
+    val isDarkMode by themePreferences.isDarkModeEnabled.collectAsState(initial = false)
+    val scope = rememberCoroutineScope()
+    var menuExpanded by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -59,6 +62,38 @@ fun TripMainScreen(
                             contentDescription = "Go back",
                             tint = MaterialTheme.colorScheme.onBackground
                         )
+                    }
+                },
+                actions = {
+                    Box {
+                        IconButton(onClick = { menuExpanded = true }) {
+                            Icon(
+                                Icons.Default.MoreVert,
+                                "More Options",
+                                tint = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(if (isDarkMode) "Light Mode" else "Dark Mode") },
+                                onClick = {
+                                    scope.launch {
+                                        themePreferences.setDarkMode(!isDarkMode)
+                                    }
+                                    menuExpanded = false
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
+                                        "Toggle Theme",
+                                        tint = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            )
+                        }
                     }
                 }
             )

@@ -13,8 +13,12 @@ import com.example.expensecalculator.TripManager.TripRepository
 import com.example.expensecalculator.TripManager.TripViewModel
 import com.example.expensecalculator.TripManager.TripViewModelFactory
 import com.example.expensecalculator.ui.theme.ExpenseCalculatorTheme
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
+    private lateinit var themePreferences: ThemePreferences
+
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
@@ -32,9 +36,13 @@ class MainActivity : ComponentActivity() {
         val expenseViewModelFactory = ExpenseViewModelFactory(repository = expenseRepository)
         val tripViewModelFactory = TripViewModelFactory(repository = tripRepository, context = this)
 
+        themePreferences = ThemePreferences(this)
+
         enableEdgeToEdge()
         setContent {
-            ExpenseCalculatorTheme {
+            val isDarkMode by themePreferences.isDarkModeEnabled.collectAsState(initial = false)
+
+            ExpenseCalculatorTheme(darkTheme = isDarkMode) {
                 val expenseViewModel: ExpenseViewModel = viewModel(factory = expenseViewModelFactory)
                 val tripViewModel: TripViewModel = viewModel(factory = tripViewModelFactory)
                 val navController = rememberNavController()
@@ -42,7 +50,8 @@ class MainActivity : ComponentActivity() {
                 NavGraph(
                     navController = navController,
                     expenseViewModel = expenseViewModel,
-                    tripViewModel = tripViewModel
+                    tripViewModel = tripViewModel,
+                    themePreferences = themePreferences
                 )
             }
         }

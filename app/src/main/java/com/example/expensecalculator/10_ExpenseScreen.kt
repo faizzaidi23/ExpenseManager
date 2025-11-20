@@ -224,7 +224,7 @@ fun ExpenseItemCard(
                         Icon(
                             Icons.Default.Delete,
                             contentDescription = "Delete",
-                            tint = MaterialTheme.colorScheme.error
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 )

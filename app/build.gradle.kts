@@ -65,6 +65,9 @@ dependencies {
     implementation(libs.bundles.androidx.room)
     ksp(libs.androidx.room.compiler)
 
+    // DataStore for preferences
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+
     // Coil - Image Loading Library for Compose
     implementation("io.coil-kt:coil-compose:2.5.0")
 
