@@ -1,4 +1,4 @@
-package com.example.expensecalculator
+package com.faiz.trekandtrack
 
 
 import android.os.Bundle
@@ -9,6 +9,11 @@ import androidx.compose.runtime.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.example.expensecalculator.Data.ExpenseDatabase
+import com.example.expensecalculator.ExpenseRepository
+import com.example.expensecalculator.ExpenseViewModel
+import com.example.expensecalculator.ExpenseViewModelFactory
+import com.example.expensecalculator.NavGraph
+import com.example.expensecalculator.ThemePreferences
 import com.example.expensecalculator.TripManager.TripRepository
 import com.example.expensecalculator.TripManager.TripViewModel
 import com.example.expensecalculator.TripManager.TripViewModelFactory

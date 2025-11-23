@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 
 // --- ViewModel to handle UI State and Logic ---
 class AuthViewModel : ViewModel() {
-    var email by mutableStateOf("")
+    var email by mutableStateOf<String>("")
     var password by mutableStateOf("")
     var isLoading by mutableStateOf(false)
         private set

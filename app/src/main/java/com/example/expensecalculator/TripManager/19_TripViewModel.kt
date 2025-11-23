@@ -77,6 +77,11 @@ class TripViewModel(
         }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyMap())
 
+    // --- NEW: Optimized settlements calculated from balances ---
+    val optimizedSettlements: StateFlow<List<Settlement>> = tripBalances.map { balances ->
+        SettlementOptimizer.calculateOptimizedSettlements(balances)
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
 
     fun saveTrip(tripId: Int?, title: String, participantNames: List<String>) {
         viewModelScope.launch {

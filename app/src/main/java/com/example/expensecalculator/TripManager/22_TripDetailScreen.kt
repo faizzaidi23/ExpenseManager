@@ -58,6 +58,7 @@ fun TripDetailScreen(
     val currentTripParticipants by viewModel.currentTripParticipants.collectAsState()
     val tripBalances by viewModel.tripBalances.collectAsState()
     val currentTripPhotos by viewModel.currentTripPhotos.collectAsState()
+    val optimizedSettlements by viewModel.optimizedSettlements.collectAsState()
 
     var selectedTabIndex by remember { mutableStateOf(0) }
     var showAddExpenseDialog by remember { mutableStateOf(false) }
@@ -265,7 +266,10 @@ fun TripDetailScreen(
                             navController.navigate("trip_expense_detail/$expenseId")
                         }
                     )
-                    1 -> BalancesContent(balances = tripBalances)
+                    1 -> SmartSettlementContent(
+                        balances = tripBalances,
+                        settlements = optimizedSettlements
+                    )
                     2 -> PhotosContent(
                         photos = currentTripPhotos,
                         onAddPhoto = { imagePickerLauncher.launch("image/*") },
@@ -406,72 +410,6 @@ fun ExpensesContent(
                         onClick = { onExpenseClick(expenseWithSplits.expense.id) }
                     )
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun BalancesContent(balances: Map<String, Double>) {
-    val isAllGood = balances.values.all { abs(it) < 0.01 }
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.small,
-                colors = CardDefaults.cardColors(containerColor = IconBackground)
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Filled.ThumbUp,
-                        contentDescription = "Status",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            if (isAllGood) "All good!" else "Settle up",
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Text(
-                            if (isAllGood) "You don't need to balance" else "Some participants need to settle up",
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            fontSize = 14.sp
-                        )
-                    }
-                }
-            }
-        }
-
-        item {
-            Text(
-                "Balances",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 16.dp)
-            )
-        }
-
-        if (balances.isEmpty()) {
-            item {
-                Text(
-                    "No participants to calculate balances.",
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    modifier = Modifier.padding(8.dp)
-                )
-            }
-        } else {
-            items(balances.entries.toList()) { (name, balance) ->
-                BalanceItem(name = name, balance = balance)
             }
         }
     }
