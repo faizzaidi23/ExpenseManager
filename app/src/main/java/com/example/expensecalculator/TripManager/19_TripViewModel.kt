@@ -83,13 +83,20 @@ class TripViewModel(
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
 
-    fun saveTrip(tripId: Int?, title: String, participantNames: List<String>) {
+    fun saveTrip(tripId: Int?, title: String, participantNames: List<String>, tripIconUri: String? = null) {
         viewModelScope.launch {
             if (tripId == null || tripId == -1) {
-                repository.addTripWithParticipants(title, participantNames)
+                repository.addTripWithParticipants(title, participantNames, tripIconUri)
             } else {
-                repository.updateTripWithParticipants(tripId, title, participantNames)
+                repository.updateTripWithParticipants(tripId, title, participantNames, tripIconUri)
             }
+        }
+    }
+
+    // --- NEW: Update trip icon ---
+    fun updateTripIcon(tripId: Int, iconUri: String) {
+        viewModelScope.launch {
+            repository.updateTripIcon(tripId, iconUri)
         }
     }
 

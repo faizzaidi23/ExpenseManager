@@ -24,7 +24,7 @@ import java.util.Date
         ExpenseSplit::class,
         TripPhoto::class
     ],
-    version = 10,
+    version = 11,
     exportSchema = false
 )
 abstract class ExpenseDatabase : RoomDatabase() {

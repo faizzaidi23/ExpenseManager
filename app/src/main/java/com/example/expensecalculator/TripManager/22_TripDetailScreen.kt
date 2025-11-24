@@ -86,6 +86,24 @@ fun TripDetailScreen(
         }
     }
 
+    // Trip icon picker launcher
+    val tripIconPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            // Take persistent URI permission
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    it,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (e: Exception) {
+                // Permission already granted or not available
+            }
+            viewModel.updateTripIcon(tripId, it.toString())
+        }
+    }
+
     // Export dialog
     if (showExportDialog) {
         TripExportDialog(
@@ -201,17 +219,28 @@ fun TripDetailScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 Box(
                     modifier = Modifier
-                        .size(80.dp)
+                        .size(100.dp)
                         .clip(CircleShape)
+                        .clickable { tripIconPickerLauncher.launch("image/*") }
                         .background(IconBackground),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        painter = rememberVectorPainter(Icons.Default.Umbrella),
-                        contentDescription = "Trip Icon",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(40.dp)
-                    )
+                    val tripIconUri = completeTripDetails?.trip?.tripIconUri
+                    if (tripIconUri != null) {
+                        AsyncImage(
+                            model = tripIconUri.toUri(),
+                            contentDescription = "Trip Icon",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            painter = rememberVectorPainter(Icons.Default.Umbrella),
+                            contentDescription = "Default Trip Icon",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(50.dp)
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
@@ -219,6 +248,11 @@ fun TripDetailScreen(
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
+                )
+                Text(
+                    text = "Tap icon to change",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                 )
                 Spacer(modifier = Modifier.height(24.dp))
 

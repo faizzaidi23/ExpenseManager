@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface TripDao {
 
-    // ==================== TRIP & PARTICIPANT OPERATIONS ====================
+
     @Insert
     suspend fun addTrip(trip: Trip): Long
     @Update
@@ -21,7 +21,7 @@ interface TripDao {
     @Query("DELETE FROM trip_participants WHERE tripId = :tripId")
     suspend fun deleteAllParticipantsForTrip(tripId: Int)
 
-    // ==================== EXPENSE & SPLIT OPERATIONS ====================
+
     @Insert
     suspend fun addExpense(expense: TripExpense): Long
 
@@ -34,14 +34,12 @@ interface TripDao {
     @Query("SELECT * FROM tripExpense WHERE tripId = :tripId ORDER BY id DESC")
     fun getExpensesByTripIdFlow(tripId: Int): Flow<List<TripExpense>>
 
-    // --- NEW: Get a single expense with its splits by expense ID ---
+
     @Transaction
     @Query("SELECT * FROM tripExpense WHERE id = :expenseId")
     fun getExpenseWithSplitsByIdFlow(expenseId: Int): Flow<ExpenseWithSplits?>
 
 
-    // ==================== COMBINED QUERIES ====================
-    // --- ADDED: The missing suspend function ---
     @Transaction
     @Query("SELECT * FROM trips WHERE id = :tripId")
     suspend fun getCompleteTripDetails(tripId: Int): CompleteTripDetails?
@@ -51,7 +49,6 @@ interface TripDao {
     fun getCompleteTripDetailsFlow(tripId: Int): Flow<CompleteTripDetails?>
 
 
-    // ==================== TRANSACTION METHODS ====================
     @Transaction
     suspend fun addTripWithParticipants(trip: Trip, participantNames: List<String>) {
         val tripId = addTrip(trip)
@@ -83,7 +80,6 @@ interface TripDao {
         deleteTrip(trip)
     }
 
-    // ==================== PHOTO OPERATIONS ====================
     @Insert
     suspend fun addPhoto(photo: TripPhoto): Long
 

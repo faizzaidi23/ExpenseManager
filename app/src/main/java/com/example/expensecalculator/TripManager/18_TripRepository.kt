@@ -11,15 +11,15 @@ class TripRepository(private val tripDao: TripDao) {
         tripDao.deleteTripCompletely(trip)
     }
 
-    suspend fun addTripWithParticipants(title: String, participantNames: List<String>) {
-        val newTrip = Trip(title = title)
+    suspend fun addTripWithParticipants(title: String, participantNames: List<String>, tripIconUri: String? = null) {
+        val newTrip = Trip(title = title, tripIconUri = tripIconUri)
         tripDao.addTripWithParticipants(newTrip, participantNames)
     }
 
-    suspend fun updateTripWithParticipants(tripId: Int, title: String, participantNames: List<String>) {
+    suspend fun updateTripWithParticipants(tripId: Int, title: String, participantNames: List<String>, tripIconUri: String? = null) {
         // First, get the existing trip to preserve other details like days/budget
         val existingTrip = getCompleteTripDetails(tripId)?.trip ?: Trip(id = tripId, title = title)
-        val tripToUpdate = existingTrip.copy(title = title)
+        val tripToUpdate = existingTrip.copy(title = title, tripIconUri = tripIconUri ?: existingTrip.tripIconUri)
         tripDao.updateTripWithParticipants(tripToUpdate, participantNames)
     }
 
@@ -29,6 +29,13 @@ class TripRepository(private val tripDao: TripDao) {
 
     fun getCompleteTripDetailsFlow(tripId: Int): Flow<CompleteTripDetails?> {
         return tripDao.getCompleteTripDetailsFlow(tripId)
+    }
+
+    // --- NEW: Update trip icon ---
+    suspend fun updateTripIcon(tripId: Int, iconUri: String) {
+        val existingTrip = getCompleteTripDetails(tripId)?.trip ?: return
+        val updatedTrip = existingTrip.copy(tripIconUri = iconUri)
+        tripDao.updateTrip(updatedTrip)
     }
 
     // --- UPDATED: This now calls the new transaction in the DAO ---

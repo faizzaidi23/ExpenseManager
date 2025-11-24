@@ -1,13 +1,10 @@
 package com.example.expensecalculator.TripManager
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.BeachAccess
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,7 +13,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.expensecalculator.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,14 +83,8 @@ fun AddTripScreen(
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
-                placeholder = { Text("E.g. City Trip") },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.BeachAccess,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                },
+                placeholder = { Text("Enter Destination") },
+
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.small,
                 singleLine = true
@@ -161,7 +151,8 @@ fun AddTripScreen(
                         viewModel.saveTrip(
                             tripId = tripId,
                             title = title,
-                            participantNames = participantNames
+                            participantNames = participantNames,
+                            tripIconUri = null
                         )
                         navController.popBackStack()
                     }

@@ -13,7 +13,8 @@ data class Trip(
     val id: Int = 0,
     val title: String,
     val days: Int? = null,
-    val expenditure: Double? = null
+    val expenditure: Double? = null,
+    val tripIconUri: String? = null  // NEW: Store custom trip icon/image URI
 )
 
 // TripParticipant is also correct. No changes needed.
