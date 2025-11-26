@@ -178,7 +178,7 @@ private fun SettlementHeaderCard(
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = if (isAllSettled) "All Settled! 🎉" else "Pending Settlements",
+                    text = if (isAllSettled) "All Settled!" else "Pending Settlements",
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
                     color = MaterialTheme.colorScheme.onSurface
@@ -416,7 +416,7 @@ private fun AllSettledEmptyState() {
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "All Settled! 🎉",
+                text = "All Settled!",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
