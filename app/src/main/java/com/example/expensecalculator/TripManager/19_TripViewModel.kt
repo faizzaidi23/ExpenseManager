@@ -122,7 +122,6 @@ class TripViewModel(
         _completeTripDetails.value = null
     }
 
-    // --- NEW: Updated addExpense function to handle splits ---
     fun addExpense(
         expenseName: String,
         amount: Double,
@@ -140,7 +139,7 @@ class TripViewModel(
                 paidBy = paidBy,
                 date = currentDate
             )
-            // Assuming equal split for now. You can add more complex logic here.
+
             val shareAmount = amount / participantsInSplit.size
             val splits = participantsInSplit.map { participantName ->
                 ExpenseSplit(
@@ -159,13 +158,12 @@ class TripViewModel(
         }
     }
 
-    // --- NEW: Get a single expense with its splits ---
     fun getExpenseWithSplitsById(expenseId: Int): StateFlow<ExpenseWithSplits?> {
         return repository.getExpenseWithSplitsById(expenseId)
             .stateIn(viewModelScope, SharingStarted.Lazily, null)
     }
 
-    // ==================== PHOTO OPERATIONS ====================
+
     val currentTripPhotos: StateFlow<List<TripPhoto>> = _completeTripDetails.map {
         it?.photos ?: emptyList()
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
@@ -212,8 +210,6 @@ class TripViewModel(
     }
 }
 
-
-// ViewModel Factory (No Changes)
 class TripViewModelFactory(
     private val repository: TripRepository,
     private val context: Context
