@@ -231,7 +231,6 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Login Button
                     Button(
                         onClick = {
                             viewModel.login(context) {

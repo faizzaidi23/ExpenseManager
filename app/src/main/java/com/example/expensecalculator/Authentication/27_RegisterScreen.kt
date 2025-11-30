@@ -125,7 +125,7 @@ fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
                     )
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Password Text Field
+
                     OutlinedTextField(
                         value = viewModel.password,
                         onValueChange = { viewModel.onPasswordChange(it) },

@@ -31,14 +31,14 @@ class TripRepository(private val tripDao: TripDao) {
         return tripDao.getCompleteTripDetailsFlow(tripId)
     }
 
-    // --- NEW: Update trip icon ---
+    //  Update trip icon
     suspend fun updateTripIcon(tripId: Int, iconUri: String) {
         val existingTrip = getCompleteTripDetails(tripId)?.trip ?: return
         val updatedTrip = existingTrip.copy(tripIconUri = iconUri)
         tripDao.updateTrip(updatedTrip)
     }
 
-    // --- UPDATED: This now calls the new transaction in the DAO ---
+    // This now calls the new transaction in the DAO
     suspend fun addExpenseWithSplits(expense: TripExpense, splits: List<ExpenseSplit>) {
         tripDao.addExpenseWithSplits(expense, splits)
     }
@@ -47,12 +47,12 @@ class TripRepository(private val tripDao: TripDao) {
         tripDao.deleteExpense(expense)
     }
 
-    // --- NEW: Get a single expense with its splits ---
+    // Get a single expense with its splits
     fun getExpenseWithSplitsById(expenseId: Int): Flow<ExpenseWithSplits?> {
         return tripDao.getExpenseWithSplitsByIdFlow(expenseId)
     }
 
-    // ==================== PHOTO OPERATIONS ====================
+    //PHOTO OPERATIONS
     suspend fun addPhoto(photo: TripPhoto): Long {
         return tripDao.addPhoto(photo)
     }

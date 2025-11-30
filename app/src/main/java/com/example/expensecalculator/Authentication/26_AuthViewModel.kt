@@ -11,7 +11,7 @@ import com.example.expensecalculator.Connection.AuthRequest
 import com.example.expensecalculator.Connection.RetrofitClient
 import kotlinx.coroutines.launch
 
-// --- ViewModel to handle UI State and Logic ---
+
 class AuthViewModel : ViewModel() {
     var email by mutableStateOf<String>("")
     var password by mutableStateOf("")

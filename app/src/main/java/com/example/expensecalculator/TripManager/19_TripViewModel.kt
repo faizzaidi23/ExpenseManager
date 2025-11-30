@@ -77,7 +77,7 @@ class TripViewModel(
         }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyMap())
 
-    // --- NEW: Optimized settlements calculated from balances ---
+    // Optimized settlements calculated from balances
     val optimizedSettlements: StateFlow<List<Settlement>> = tripBalances.map { balances ->
         SettlementOptimizer.calculateOptimizedSettlements(balances)
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
@@ -93,7 +93,7 @@ class TripViewModel(
         }
     }
 
-    // --- NEW: Update trip icon ---
+    //  Update trip icon
     fun updateTripIcon(tripId: Int, iconUri: String) {
         viewModelScope.launch {
             repository.updateTripIcon(tripId, iconUri)
@@ -186,7 +186,7 @@ class TripViewModel(
         }
     }
 
-    // ==================== EXPORT OPERATIONS ====================
+    //EXPORT OPERATIONS
     fun exportTrip(format: ExportFormat, onComplete: (Uri?) -> Unit) {
         // Check if Android version supports the export functionality
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {

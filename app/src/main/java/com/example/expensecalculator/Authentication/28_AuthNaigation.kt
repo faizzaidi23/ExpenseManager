@@ -28,6 +28,5 @@ fun AuthNavigator(onLoginSuccess: () -> Unit) { // Accept the callback
         composable("register") {
             RegisterScreen(navController = navController, viewModel = authViewModel)
         }
-        // The "home" composable is removed from here as MainActivity now handles the switch
     }
 }
