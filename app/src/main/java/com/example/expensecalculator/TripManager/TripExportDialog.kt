@@ -22,7 +22,7 @@ fun TripExportDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Export Trip Expenses") },
+        title = { Text("Exports Trip Expenses") },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
