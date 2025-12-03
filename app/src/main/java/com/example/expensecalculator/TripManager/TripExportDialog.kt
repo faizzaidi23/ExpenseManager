@@ -30,7 +30,7 @@ fun TripExportDialog(
             ) {
                 ExportOption(
                     title = "CSV File",
-                    description = "Compatible with Excel, Google Sheets",
+                    description = "It is compatible with Excel, Google Sheets",
                     icon = Icons.Default.Description,
                     onClick = {
                         onExport(ExportFormat.CSV)
