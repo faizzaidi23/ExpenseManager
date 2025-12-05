@@ -82,7 +82,7 @@ private fun ExportOption(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
+            .padding(vertical = 9.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -114,7 +114,7 @@ fun HandleExportResult(uri: android.net.Uri?) {
     if (uri != null) {
         Toast.makeText(
             context,
-            "File exported successfully to Downloads folder",
+            "File exported successfully to the  Downloads folder",
             Toast.LENGTH_LONG
         ).show()
     } else {
