@@ -47,7 +47,7 @@ fun TripMainScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Trip Manager",
+                        text = "All Trips",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onBackground
                     )
