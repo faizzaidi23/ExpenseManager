@@ -88,4 +88,17 @@ interface TripDao {
 
     @Query("SELECT * FROM trip_photos WHERE tripId = :tripId ORDER BY timestamp DESC")
     fun getPhotosByTripIdFlow(tripId: Int): Flow<List<TripPhoto>>
+
+    // Settlement Payment operations
+    @Insert
+    suspend fun addSettlementPayment(payment: SettlementPayment): Long
+
+    @Query("SELECT * FROM settlement_payments WHERE tripId = :tripId ORDER BY timestamp DESC")
+    fun getSettlementPaymentsByTripIdFlow(tripId: Int): Flow<List<SettlementPayment>>
+
+    @Query("DELETE FROM settlement_payments WHERE tripId = :tripId")
+    suspend fun deleteAllSettlementPaymentsForTrip(tripId: Int)
+
+    @Delete
+    suspend fun deleteSettlementPayment(payment: SettlementPayment)
 }

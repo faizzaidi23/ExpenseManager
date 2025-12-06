@@ -39,11 +39,14 @@ import kotlin.math.abs
 @Composable
 fun SmartSettlementContent(
     balances: Map<String, Double>,
-    settlements: List<Settlement>
+    settlements: List<Settlement>,
+    onRecordPayment: (String, String, Double) -> Unit = { _, _, _ -> }
 ) {
     val context = LocalContext.current
     val isAllSettled = balances.values.all { abs(it) < 0.01 }
     var expandedSettlementId by remember { mutableStateOf<Int?>(null) }
+    var showPaymentDialog by remember { mutableStateOf(false) }
+    var selectedSettlement by remember { mutableStateOf<Settlement?>(null) }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -89,6 +92,10 @@ fun SmartSettlementContent(
                     },
                     onShareClick = {
                         shareSettlement(context, settlement)
+                    },
+                    onRecordPayment = {
+                        selectedSettlement = settlement
+                        showPaymentDialog = true
                     }
                 )
             }
@@ -132,6 +139,22 @@ fun SmartSettlementContent(
             }
         }
     }
+
+    // Payment Recording Dialog
+    if (showPaymentDialog && selectedSettlement != null) {
+        RecordPaymentDialog(
+            settlement = selectedSettlement!!,
+            onDismiss = {
+                showPaymentDialog = false
+                selectedSettlement = null
+            },
+            onConfirm = { amount ->
+                onRecordPayment(selectedSettlement!!.from, selectedSettlement!!.to, amount)
+                showPaymentDialog = false
+                selectedSettlement = null
+            }
+        )
+    }
 }
 
 @Composable
@@ -153,32 +176,9 @@ private fun SettlementHeaderCard(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (isAllSettled)
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                        else
-                            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = if (isAllSettled) Icons.Default.CheckCircle else Icons.Default.AccountBalance,
-                    contentDescription = null,
-                    tint = if (isAllSettled)
-                        MaterialTheme.colorScheme.primary
-                    else
-                        MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = if (isAllSettled) "All Settled!" else "Pending Settlements",
+                    text = if (isAllSettled) "All Settled" else "Pending Settlements",
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
                     color = MaterialTheme.colorScheme.onSurface
@@ -203,7 +203,8 @@ private fun SettlementCard(
     isExpanded: Boolean,
     onExpandToggle: () -> Unit,
     onCopyClick: () -> Unit,
-    onShareClick: () -> Unit
+    onShareClick: () -> Unit,
+    onRecordPayment: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier
@@ -297,6 +298,12 @@ private fun SettlementCard(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        ActionButton(
+                            icon = Icons.Default.Payment,
+                            label = "Record Payment",
+                            onClick = onRecordPayment,
+                            modifier = Modifier.weight(1f)
+                        )
                         ActionButton(
                             icon = Icons.Default.ContentCopy,
                             label = "Copy",
@@ -408,22 +415,15 @@ private fun AllSettledEmptyState() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Icon(
-                imageVector = Icons.Default.CheckCircle,
-                contentDescription = "All Settled",
-                modifier = Modifier.size(64.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "All Settled!",
+                text = "All Settled",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Everyone has been paid back.\nNo settlements needed!",
+                text = "Everyone has been paid back.\nNo settlements needed",
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 textAlign = TextAlign.Center
@@ -500,4 +500,144 @@ private fun shareSettlement(context: Context, settlement: Settlement) {
         putExtra(Intent.EXTRA_SUBJECT, "Trip Settlement Reminder")
     }
     context.startActivity(Intent.createChooser(intent, "Share Settlement Reminder"))
+}
+
+@Composable
+private fun RecordPaymentDialog(
+    settlement: Settlement,
+    onDismiss: () -> Unit,
+    onConfirm: (Double) -> Unit
+) {
+    var paymentAmount by remember { mutableStateOf(settlement.amount.toString()) }
+    var isPartialPayment by remember { mutableStateOf(false) }
+
+    val amount = paymentAmount.toDoubleOrNull() ?: 0.0
+    val isValid = amount > 0 && amount <= settlement.amount
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                "Record Payment",
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Settlement Info
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp)
+                    ) {
+                        Text(
+                            "Settlement Details",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    "From: ${settlement.from}",
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    "To: ${settlement.to}",
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Text(
+                                "₹${"%.2f".format(settlement.amount)}",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+
+                // Payment Options
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = !isPartialPayment,
+                        onClick = {
+                            isPartialPayment = false
+                            paymentAmount = settlement.amount.toString()
+                        },
+                        label = { Text("Full Payment") },
+                        modifier = Modifier.weight(1f)
+                    )
+                    FilterChip(
+                        selected = isPartialPayment,
+                        onClick = { isPartialPayment = true },
+                        label = { Text("Partial Payment") },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                // Amount Input
+                OutlinedTextField(
+                    value = paymentAmount,
+                    onValueChange = {
+                        paymentAmount = it
+                        isPartialPayment = true
+                    },
+                    label = { Text("Payment Amount") },
+                    placeholder = { Text("Enter amount") },
+                    prefix = { Text("₹") },
+                    singleLine = true,
+                    isError = !isValid && paymentAmount.isNotBlank(),
+                    supportingText = {
+                        if (!isValid && paymentAmount.isNotBlank()) {
+                            Text(
+                                "Amount must be between ₹0 and ₹${"%.2f".format(settlement.amount)}",
+                                color = MaterialTheme.colorScheme.error,
+                                fontSize = 12.sp
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                if (isValid && amount < settlement.amount) {
+                    Text(
+                        "Remaining: ₹${"%.2f".format(settlement.amount - amount)}",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(amount) },
+                enabled = isValid
+            ) {
+                Text("Record")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }

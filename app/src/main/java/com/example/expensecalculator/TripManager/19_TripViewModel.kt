@@ -10,6 +10,7 @@ import com.example.expensecalculator.Storage.ExportFormat
 import com.example.expensecalculator.tripData.CompleteTripDetails
 import com.example.expensecalculator.tripData.ExpenseSplit
 import com.example.expensecalculator.tripData.ExpenseWithSplits
+import com.example.expensecalculator.tripData.SettlementPayment
 import com.example.expensecalculator.tripData.Trip
 import com.example.expensecalculator.tripData.TripExpense
 import com.example.expensecalculator.tripData.TripParticipant
@@ -77,8 +78,22 @@ class TripViewModel(
         }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyMap())
 
-    // Optimized settlements calculated from balances
-    val optimizedSettlements: StateFlow<List<Settlement>> = tripBalances.map { balances ->
+    // Settlement payments for current trip
+    private val _settlementPayments = MutableStateFlow<List<SettlementPayment>>(emptyList())
+    val settlementPayments: StateFlow<List<SettlementPayment>> = _settlementPayments.asStateFlow()
+
+    // Adjusted balances after settlement payments
+    val adjustedBalances: StateFlow<Map<String, Double>> = tripBalances.map { baseBalances ->
+        val adjusted = baseBalances.toMutableMap()
+        _settlementPayments.value.forEach { payment ->
+            adjusted[payment.fromParticipant] = (adjusted[payment.fromParticipant] ?: 0.0) + payment.amount
+            adjusted[payment.toParticipant] = (adjusted[payment.toParticipant] ?: 0.0) - payment.amount
+        }
+        adjusted
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyMap())
+
+    // Optimized settlements calculated from adjusted balances
+    val optimizedSettlements: StateFlow<List<Settlement>> = adjustedBalances.map { balances ->
         SettlementOptimizer.calculateOptimizedSettlements(balances)
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
@@ -116,6 +131,7 @@ class TripViewModel(
                 _completeTripDetails.value = details
             }
         }
+        loadSettlementPayments(tripId)
     }
 
     fun clearCurrentTrip() {
@@ -183,6 +199,37 @@ class TripViewModel(
     fun deletePhoto(photo: TripPhoto) {
         viewModelScope.launch {
             repository.deletePhoto(photo)
+        }
+    }
+
+    // SETTLEMENT PAYMENT OPERATIONS
+    fun addSettlementPayment(fromParticipant: String, toParticipant: String, amount: Double) {
+        val tripId = _completeTripDetails.value?.trip?.id ?: return
+        val currentDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+
+        viewModelScope.launch {
+            val payment = SettlementPayment(
+                tripId = tripId,
+                fromParticipant = fromParticipant,
+                toParticipant = toParticipant,
+                amount = amount,
+                date = currentDate
+            )
+            repository.addSettlementPayment(payment)
+        }
+    }
+
+    fun deleteSettlementPayment(payment: SettlementPayment) {
+        viewModelScope.launch {
+            repository.deleteSettlementPayment(payment)
+        }
+    }
+
+    private fun loadSettlementPayments(tripId: Int) {
+        viewModelScope.launch {
+            repository.getSettlementPaymentsByTripId(tripId).collect { payments ->
+                _settlementPayments.value = payments
+            }
         }
     }
 

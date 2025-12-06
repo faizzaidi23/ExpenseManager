@@ -57,6 +57,7 @@ fun TripDetailScreen(
     val completeTripDetails by viewModel.completeTripDetails.collectAsState()
     val currentTripParticipants by viewModel.currentTripParticipants.collectAsState()
     val tripBalances by viewModel.tripBalances.collectAsState()
+    val adjustedBalances by viewModel.adjustedBalances.collectAsState()
     val currentTripPhotos by viewModel.currentTripPhotos.collectAsState()
     val optimizedSettlements by viewModel.optimizedSettlements.collectAsState()
 
@@ -301,8 +302,11 @@ fun TripDetailScreen(
                         }
                     )
                     1 -> SmartSettlementContent(
-                        balances = tripBalances,
-                        settlements = optimizedSettlements
+                        balances = adjustedBalances,
+                        settlements = optimizedSettlements,
+                        onRecordPayment = { from, to, amount ->
+                            viewModel.addSettlementPayment(from, to, amount)
+                        }
                     )
                     2 -> PhotosContent(
                         photos = currentTripPhotos,

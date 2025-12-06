@@ -64,4 +64,17 @@ class TripRepository(private val tripDao: TripDao) {
     fun getPhotosByTripId(tripId: Int): Flow<List<TripPhoto>> {
         return tripDao.getPhotosByTripIdFlow(tripId)
     }
+
+    // SETTLEMENT PAYMENT OPERATIONS
+    suspend fun addSettlementPayment(payment: SettlementPayment): Long {
+        return tripDao.addSettlementPayment(payment)
+    }
+
+    suspend fun deleteSettlementPayment(payment: SettlementPayment) {
+        tripDao.deleteSettlementPayment(payment)
+    }
+
+    fun getSettlementPaymentsByTripId(tripId: Int): Flow<List<SettlementPayment>> {
+        return tripDao.getSettlementPaymentsByTripIdFlow(tripId)
+    }
 }
