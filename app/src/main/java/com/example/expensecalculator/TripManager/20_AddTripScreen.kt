@@ -24,15 +24,17 @@ fun AddTripScreen(
     val isEditMode = tripId != null && tripId != -1
 
     var title by remember { mutableStateOf("") }
-    var selectedCurrency by remember { mutableStateOf("Indian Rupee") }
+    var selectedCurrency by remember { mutableStateOf("INR") }
     val participants = remember { mutableStateListOf("") }
     var isDataLoaded by remember { mutableStateOf(false) }
+    var showCurrencyDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(key1 = tripId) {
         if (isEditMode && !isDataLoaded) {
             val tripToEdit = viewModel.getTripById(tripId!!)
             if (tripToEdit != null) {
                 title = tripToEdit.trip.title
+                selectedCurrency = tripToEdit.trip.currency
                 participants.clear()
                 participants.addAll(tripToEdit.participants.map { it.participantName })
                 if (participants.isEmpty()) participants.add("")
@@ -84,7 +86,6 @@ fun AddTripScreen(
                 value = title,
                 onValueChange = { title = it },
                 placeholder = { Text("Enter Destination") },
-
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.small,
                 singleLine = true
@@ -92,13 +93,15 @@ fun AddTripScreen(
 
             // Currency Section
             Text(
-                "Options",
+                "Currency",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold
             )
-            CurrencyDropdown(
-                selected = selectedCurrency,
-                onSelect = { selectedCurrency = it }
+
+            CurrencyChip(
+                currency = selectedCurrency,
+                onClick = { showCurrencyDialog = true },
+                modifier = Modifier.fillMaxWidth()
             )
 
             // Participants Section
@@ -152,7 +155,8 @@ fun AddTripScreen(
                             tripId = tripId,
                             title = title,
                             participantNames = participantNames,
-                            tripIconUri = null
+                            tripIconUri = null,
+                            currency = selectedCurrency
                         )
                         navController.popBackStack()
                     }
@@ -172,6 +176,17 @@ fun AddTripScreen(
                 )
             }
         }
+    }
+
+    // Currency Selection Dialog
+    if (showCurrencyDialog) {
+        CurrencySelectionDialog(
+            currentCurrency = selectedCurrency,
+            onDismiss = { showCurrencyDialog = false },
+            onCurrencySelected = { currency ->
+                selectedCurrency = currency
+            }
+        )
     }
 }
 

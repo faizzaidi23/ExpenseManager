@@ -11,15 +11,15 @@ class TripRepository(private val tripDao: TripDao) {
         tripDao.deleteTripCompletely(trip)
     }
 
-    suspend fun addTripWithParticipants(title: String, participantNames: List<String>, tripIconUri: String? = null) {
-        val newTrip = Trip(title = title, tripIconUri = tripIconUri)
+    suspend fun addTripWithParticipants(title: String, participantNames: List<String>, tripIconUri: String? = null, currency: String = "INR") {
+        val newTrip = Trip(title = title, tripIconUri = tripIconUri, currency = currency)
         tripDao.addTripWithParticipants(newTrip, participantNames)
     }
 
-    suspend fun updateTripWithParticipants(tripId: Int, title: String, participantNames: List<String>, tripIconUri: String? = null) {
+    suspend fun updateTripWithParticipants(tripId: Int, title: String, participantNames: List<String>, tripIconUri: String? = null, currency: String = "INR") {
         // First, get the existing trip to preserve other details like days/budget
-        val existingTrip = getCompleteTripDetails(tripId)?.trip ?: Trip(id = tripId, title = title)
-        val tripToUpdate = existingTrip.copy(title = title, tripIconUri = tripIconUri ?: existingTrip.tripIconUri)
+        val existingTrip = getCompleteTripDetails(tripId)?.trip ?: Trip(id = tripId, title = title, currency = currency)
+        val tripToUpdate = existingTrip.copy(title = title, tripIconUri = tripIconUri ?: existingTrip.tripIconUri, currency = currency)
         tripDao.updateTripWithParticipants(tripToUpdate, participantNames)
     }
 

@@ -301,13 +301,19 @@ fun TripDetailScreen(
                             navController.navigate("trip_expense_detail/$expenseId")
                         }
                     )
-                    1 -> SmartSettlementContent(
-                        balances = adjustedBalances,
-                        settlements = optimizedSettlements,
-                        onRecordPayment = { from, to, amount ->
-                            viewModel.addSettlementPayment(from, to, amount)
-                        }
-                    )
+                    1 -> {
+                        val currencySymbol = completeTripDetails?.trip?.currency?.let {
+                            com.example.expensecalculator.util.CurrencyCode.fromCode(it).symbol
+                        } ?: "₹"
+                        SmartSettlementContent(
+                            balances = adjustedBalances,
+                            settlements = optimizedSettlements,
+                            currencySymbol = currencySymbol,
+                            onRecordPayment = { from, to, amount ->
+                                viewModel.addSettlementPayment(from, to, amount)
+                            }
+                        )
+                    }
                     2 -> PhotosContent(
                         photos = currentTripPhotos,
                         onAddPhoto = { imagePickerLauncher.launch("image/*") },

@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -40,6 +41,7 @@ import kotlin.math.abs
 fun SmartSettlementContent(
     balances: Map<String, Double>,
     settlements: List<Settlement>,
+    currencySymbol: String = "₹", // Add currency parameter
     onRecordPayment: (String, String, Double) -> Unit = { _, _, _ -> }
 ) {
     val context = LocalContext.current
@@ -84,14 +86,15 @@ fun SmartSettlementContent(
                     settlement = settlement,
                     settlementNumber = index + 1,
                     isExpanded = expandedSettlementId == index,
+                    currencySymbol = currencySymbol,
                     onExpandToggle = {
                         expandedSettlementId = if (expandedSettlementId == index) null else index
                     },
                     onCopyClick = {
-                        copyToClipboard(context, settlement)
+                        copyToClipboard(context, settlement, currencySymbol)
                     },
                     onShareClick = {
-                        shareSettlement(context, settlement)
+                        shareSettlement(context, settlement, currencySymbol)
                     },
                     onRecordPayment = {
                         selectedSettlement = settlement
@@ -104,7 +107,8 @@ fun SmartSettlementContent(
             item {
                 SettlementSummaryCard(
                     totalTransactions = settlements.size,
-                    totalAmount = settlements.sumOf { it.amount }
+                    totalAmount = settlements.sumOf { it.amount },
+                    currencySymbol = currencySymbol
                 )
             }
         } else {
@@ -135,7 +139,11 @@ fun SmartSettlementContent(
             }
         } else {
             items(balances.entries.toList()) { (name, balance) ->
-                IndividualBalanceItem(name = name, balance = balance)
+                IndividualBalanceItem(
+                    name = name,
+                    balance = balance,
+                    currencySymbol = currencySymbol
+                )
             }
         }
     }
@@ -145,6 +153,7 @@ fun SmartSettlementContent(
         RecordPaymentDialog(
             balances = balances,
             preselectedSettlement = selectedSettlement,
+            currencySymbol = currencySymbol,
             onDismiss = {
                 showPaymentDialog = false
                 selectedSettlement = null
@@ -205,7 +214,8 @@ private fun SettlementCard(
     onExpandToggle: () -> Unit,
     onCopyClick: () -> Unit,
     onShareClick: () -> Unit,
-    onRecordPayment: () -> Unit = {}
+    onRecordPayment: () -> Unit = {},
+    currencySymbol: String // Add currency symbol parameter
 ) {
     Card(
         modifier = Modifier
@@ -247,7 +257,7 @@ private fun SettlementCard(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Icon(
-                            imageVector = Icons.Default.ArrowForward,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                             contentDescription = "pays",
                             modifier = Modifier
                                 .padding(horizontal = 4.dp)
@@ -268,7 +278,7 @@ private fun SettlementCard(
                 }
 
                 Text(
-                    text = "₹${"%.2f".format(settlement.amount)}",
+                    text = "$currencySymbol${"%.2f".format(settlement.amount)}", // Use currency symbol
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
                     color = MaterialTheme.colorScheme.primary
@@ -363,7 +373,8 @@ private fun ActionButton(
 @Composable
 private fun SettlementSummaryCard(
     totalTransactions: Int,
-    totalAmount: Double
+    totalAmount: Double,
+    currencySymbol: String // Add currency symbol parameter
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -395,7 +406,7 @@ private fun SettlementSummaryCard(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
                 Text(
-                    "₹${"%.2f".format(totalAmount)}",
+                    "$currencySymbol${"%.2f".format(totalAmount)}", // Use currency symbol
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -434,7 +445,7 @@ private fun AllSettledEmptyState() {
 }
 
 @Composable
-private fun IndividualBalanceItem(name: String, balance: Double) {
+private fun IndividualBalanceItem(name: String, balance: Double, currencySymbol: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -463,8 +474,8 @@ private fun IndividualBalanceItem(name: String, balance: Double) {
         )
 
         val (displayText, textColor) = when {
-            balance > 0.01 -> "Gets back ₹${"%.2f".format(abs(balance))}" to MaterialTheme.colorScheme.primary
-            balance < -0.01 -> "Owes ₹${"%.2f".format(abs(balance))}" to MaterialTheme.colorScheme.error
+            balance > 0.01 -> "Gets back $currencySymbol${"%.2f".format(abs(balance))}" to MaterialTheme.colorScheme.primary
+            balance < -0.01 -> "Owes $currencySymbol${"%.2f".format(abs(balance))}" to MaterialTheme.colorScheme.error
             else -> "Settled" to MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         }
 
@@ -478,19 +489,19 @@ private fun IndividualBalanceItem(name: String, balance: Double) {
 }
 
 // Helper functions for actions
-private fun copyToClipboard(context: Context, settlement: Settlement) {
-    val text = "${settlement.from} needs to pay ${settlement.to} ₹${"%.2f".format(settlement.amount)}"
+private fun copyToClipboard(context: Context, settlement: Settlement, currencySymbol: String) {
+    val text = "${settlement.from} needs to pay ${settlement.to} $currencySymbol${"%.2f".format(settlement.amount)}"
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     clipboard.setPrimaryClip(ClipData.newPlainText("Settlement", text))
     Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
 }
 
-private fun shareSettlement(context: Context, settlement: Settlement) {
+private fun shareSettlement(context: Context, settlement: Settlement, currencySymbol: String) {
     val text = """
         Trip Settlement Reminder
         
         ${settlement.from} needs to pay ${settlement.to}
-        Amount: ₹${"%.2f".format(settlement.amount)}
+        Amount: $currencySymbol${"%.2f".format(settlement.amount)}
         
         Please settle this amount via UPI, cash, or bank transfer.
     """.trimIndent()
@@ -503,12 +514,14 @@ private fun shareSettlement(context: Context, settlement: Settlement) {
     context.startActivity(Intent.createChooser(intent, "Share Settlement Reminder"))
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RecordPaymentDialog(
     balances: Map<String, Double>,
     preselectedSettlement: Settlement?,
     onDismiss: () -> Unit,
-    onConfirm: (String, String, Double) -> Unit
+    onConfirm: (String, String, Double) -> Unit,
+    currencySymbol: String // Add currency symbol parameter
 ) {
     // Get the balances from parent
     var fromParticipant by remember { mutableStateOf(preselectedSettlement?.from ?: "") }
@@ -624,7 +637,7 @@ private fun RecordPaymentDialog(
                     onValueChange = { paymentAmount = it },
                     label = { Text("Payment Amount") },
                     placeholder = { Text("Enter amount") },
-                    prefix = { Text("₹") },
+                    prefix = { Text(currencySymbol) },
                     singleLine = true,
                     isError = paymentAmount.isNotBlank() && amount <= 0,
                     supportingText = {
@@ -667,7 +680,7 @@ private fun RecordPaymentDialog(
                                 )
                             }
                             Text(
-                                "₹${"%.2f".format(amount)}",
+                                "$currencySymbol${"%.2f".format(amount)}", // Use currency symbol
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp,
                                 color = MaterialTheme.colorScheme.primary
