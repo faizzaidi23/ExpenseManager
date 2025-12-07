@@ -14,7 +14,8 @@ data class Trip(
     val title: String,
     val days: Int? = null,
     val expenditure: Double? = null,
-    val tripIconUri: String? = null
+    val tripIconUri: String? = null,
+    val currency: String = "INR" // Base currency for the trip (ISO code)
 )
 
 @Entity(

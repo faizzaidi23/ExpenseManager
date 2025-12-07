@@ -101,4 +101,8 @@ interface TripDao {
 
     @Delete
     suspend fun deleteSettlementPayment(payment: SettlementPayment)
+
+    // Currency operations
+    @Query("UPDATE trips SET currency = :currency WHERE id = :tripId")
+    suspend fun updateTripCurrency(tripId: Int, currency: String)
 }

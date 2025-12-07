@@ -143,13 +143,14 @@ fun SmartSettlementContent(
     // Payment Recording Dialog
     if (showPaymentDialog && selectedSettlement != null) {
         RecordPaymentDialog(
-            settlement = selectedSettlement!!,
+            balances = balances,
+            preselectedSettlement = selectedSettlement,
             onDismiss = {
                 showPaymentDialog = false
                 selectedSettlement = null
             },
-            onConfirm = { amount ->
-                onRecordPayment(selectedSettlement!!.from, selectedSettlement!!.to, amount)
+            onConfirm = { from, to, amount ->
+                onRecordPayment(from, to, amount)
                 showPaymentDialog = false
                 selectedSettlement = null
             }
@@ -504,15 +505,20 @@ private fun shareSettlement(context: Context, settlement: Settlement) {
 
 @Composable
 private fun RecordPaymentDialog(
-    settlement: Settlement,
+    balances: Map<String, Double>,
+    preselectedSettlement: Settlement?,
     onDismiss: () -> Unit,
-    onConfirm: (Double) -> Unit
+    onConfirm: (String, String, Double) -> Unit
 ) {
-    var paymentAmount by remember { mutableStateOf(settlement.amount.toString()) }
-    var isPartialPayment by remember { mutableStateOf(false) }
+    // Get the balances from parent
+    var fromParticipant by remember { mutableStateOf(preselectedSettlement?.from ?: "") }
+    var toParticipant by remember { mutableStateOf(preselectedSettlement?.to ?: "") }
+    var paymentAmount by remember { mutableStateOf(preselectedSettlement?.amount?.toString() ?: "") }
+    var expandedFromDropdown by remember { mutableStateOf(false) }
+    var expandedToDropdown by remember { mutableStateOf(false) }
 
     val amount = paymentAmount.toDoubleOrNull() ?: 0.0
-    val isValid = amount > 0 && amount <= settlement.amount
+    val isValid = amount > 0 && fromParticipant.isNotBlank() && toParticipant.isNotBlank() && fromParticipant != toParticipant
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -526,89 +532,111 @@ private fun RecordPaymentDialog(
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Settlement Info
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+                Text(
+                    "Record a payment between participants",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+
+                // From Participant Dropdown - Only show people who owe money (negative balance)
+                ExposedDropdownMenuBox(
+                    expanded = expandedFromDropdown,
+                    onExpandedChange = { expandedFromDropdown = it }
                 ) {
-                    Column(
+                    OutlinedTextField(
+                        value = fromParticipant,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Who is paying?") },
+                        trailingIcon = {
+                            Icon(
+                                imageVector = if (expandedFromDropdown) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                                contentDescription = null
+                            )
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(12.dp)
+                            .menuAnchor(),
+                        colors = OutlinedTextFieldDefaults.colors()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expandedFromDropdown,
+                        onDismissRequest = { expandedFromDropdown = false }
                     ) {
-                        Text(
-                            "Settlement Details",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text(
-                                    "From: ${settlement.from}",
-                                    fontSize = 14.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    "To: ${settlement.to}",
-                                    fontSize = 14.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Text(
-                                "₹${"%.2f".format(settlement.amount)}",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp,
-                                color = MaterialTheme.colorScheme.primary
+                        balances.filter { it.value < 0 }.forEach { (name, _) ->
+                            DropdownMenuItem(
+                                text = { Text(name) },
+                                onClick = {
+                                    fromParticipant = name
+                                    expandedFromDropdown = false
+                                    // Reset "to" when "from" changes
+                                    if (toParticipant == name) {
+                                        toParticipant = balances.keys.firstOrNull { it != name } ?: ""
+                                    }
+                                },
+                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
                             )
                         }
                     }
                 }
 
-                // Payment Options
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                // To Participant Dropdown - Only show people who are owed money (positive balance)
+                ExposedDropdownMenuBox(
+                    expanded = expandedToDropdown,
+                    onExpandedChange = { expandedToDropdown = it }
                 ) {
-                    FilterChip(
-                        selected = !isPartialPayment,
-                        onClick = {
-                            isPartialPayment = false
-                            paymentAmount = settlement.amount.toString()
+                    OutlinedTextField(
+                        value = toParticipant,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Paying to whom?") },
+                        trailingIcon = {
+                            Icon(
+                                imageVector = if (expandedToDropdown) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                                contentDescription = null
+                            )
                         },
-                        label = { Text("Full Payment") },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(),
+                        colors = OutlinedTextFieldDefaults.colors()
                     )
-                    FilterChip(
-                        selected = isPartialPayment,
-                        onClick = { isPartialPayment = true },
-                        label = { Text("Partial Payment") },
-                        modifier = Modifier.weight(1f)
-                    )
+                    ExposedDropdownMenu(
+                        expanded = expandedToDropdown,
+                        onDismissRequest = { expandedToDropdown = false }
+                    ) {
+                        balances.filter { it.value > 0 }.forEach { (name, _) ->
+                            DropdownMenuItem(
+                                text = { Text(name) },
+                                onClick = {
+                                    toParticipant = name
+                                    expandedToDropdown = false
+                                },
+                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                            )
+                        }
+                    }
                 }
 
                 // Amount Input
                 OutlinedTextField(
                     value = paymentAmount,
-                    onValueChange = {
-                        paymentAmount = it
-                        isPartialPayment = true
-                    },
+                    onValueChange = { paymentAmount = it },
                     label = { Text("Payment Amount") },
                     placeholder = { Text("Enter amount") },
                     prefix = { Text("₹") },
                     singleLine = true,
-                    isError = !isValid && paymentAmount.isNotBlank(),
+                    isError = paymentAmount.isNotBlank() && amount <= 0,
                     supportingText = {
-                        if (!isValid && paymentAmount.isNotBlank()) {
+                        if (paymentAmount.isNotBlank() && amount <= 0) {
                             Text(
-                                "Amount must be between ₹0 and ₹${"%.2f".format(settlement.amount)}",
+                                "Amount must be greater than 0",
+                                color = MaterialTheme.colorScheme.error,
+                                fontSize = 12.sp
+                            )
+                        } else if (fromParticipant == toParticipant && fromParticipant.isNotBlank()) {
+                            Text(
+                                "Cannot pay to the same person",
                                 color = MaterialTheme.colorScheme.error,
                                 fontSize = 12.sp
                             )
@@ -617,21 +645,44 @@ private fun RecordPaymentDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                if (isValid && amount < settlement.amount) {
-                    Text(
-                        "Remaining: ₹${"%.2f".format(settlement.amount - amount)}",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
+                // Summary Card
+                if (isValid) {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    "$fromParticipant pays $toParticipant",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                            Text(
+                                "₹${"%.2f".format(amount)}",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                 }
             }
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(amount) },
+                onClick = { onConfirm(fromParticipant, toParticipant, amount) },
                 enabled = isValid
             ) {
-                Text("Record")
+                Text("Record Payment")
             }
         },
         dismissButton = {

@@ -7,6 +7,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.expensecalculator.Storage.ExportFormat
+import com.example.expensecalculator.network.RetrofitClient
+import com.example.expensecalculator.repository.ExchangeRateRepository
 import com.example.expensecalculator.tripData.CompleteTripDetails
 import com.example.expensecalculator.tripData.ExpenseSplit
 import com.example.expensecalculator.tripData.ExpenseWithSplits
@@ -15,6 +17,7 @@ import com.example.expensecalculator.tripData.Trip
 import com.example.expensecalculator.tripData.TripExpense
 import com.example.expensecalculator.tripData.TripParticipant
 import com.example.expensecalculator.tripData.TripPhoto
+import com.example.expensecalculator.util.CurrencyUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -32,6 +35,20 @@ class TripViewModel(
 ) : ViewModel() {
 
     private val exportManager = TripExportManager(context.applicationContext)
+
+    // Exchange rate repository for currency conversion
+    private val exchangeRateRepository = ExchangeRateRepository(
+        RetrofitClient.exchangeRateApi,
+        context.getSharedPreferences("exchange_rates", Context.MODE_PRIVATE)
+    )
+
+    // Current exchange rate for display
+    private val _currentExchangeRate = MutableStateFlow<Double?>(null)
+    val currentExchangeRate: StateFlow<Double?> = _currentExchangeRate.asStateFlow()
+
+    // Loading state for exchange rate fetch
+    private val _isLoadingExchangeRate = MutableStateFlow(false)
+    val isLoadingExchangeRate: StateFlow<Boolean> = _isLoadingExchangeRate.asStateFlow()
 
     val allTrips = repository.getAllTrips()
 
@@ -229,6 +246,58 @@ class TripViewModel(
         viewModelScope.launch {
             repository.getSettlementPaymentsByTripId(tripId).collect { payments ->
                 _settlementPayments.value = payments
+            }
+        }
+    }
+
+    // CURRENCY OPERATIONS
+    /**
+     * Get exchange rate between two currencies
+     */
+    fun getExchangeRate(fromCurrency: String, toCurrency: String, onResult: (Double?) -> Unit) {
+        viewModelScope.launch {
+            _isLoadingExchangeRate.value = true
+            try {
+                val rate = exchangeRateRepository.getRate(fromCurrency, toCurrency)
+                _currentExchangeRate.value = rate
+                onResult(rate)
+            } catch (e: Exception) {
+                _currentExchangeRate.value = null
+                onResult(null)
+            } finally {
+                _isLoadingExchangeRate.value = false
+            }
+        }
+    }
+
+    /**
+     * Update trip currency
+     */
+    fun updateTripCurrency(tripId: Int, currency: String) {
+        viewModelScope.launch {
+            repository.updateTripCurrency(tripId, currency)
+        }
+    }
+
+    /**
+     * Format amount with trip's currency
+     */
+    fun formatAmount(amount: Double): String {
+        val currency = _completeTripDetails.value?.trip?.currency ?: "INR"
+        return CurrencyUtils.format(amount, currency)
+    }
+
+    /**
+     * Refresh exchange rates for current trip currency
+     */
+    fun refreshExchangeRates(onComplete: (Boolean) -> Unit) {
+        val currency = _completeTripDetails.value?.trip?.currency ?: "INR"
+        viewModelScope.launch {
+            try {
+                exchangeRateRepository.refreshRates(currency)
+                onComplete(true)
+            } catch (e: Exception) {
+                onComplete(false)
             }
         }
     }

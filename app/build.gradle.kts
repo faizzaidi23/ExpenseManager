@@ -77,6 +77,12 @@ dependencies {
     implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0") // A converter that allows retrofit to use kotlinx Serialization
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0") // A utility to log network request and response details, which is very helpful for debugging
 
+    // Moshi for JSON parsing (for exchange rate API)
+    implementation("com.squareup.moshi:moshi:1.15.0")
+    implementation("com.squareup.moshi:moshi-kotlin:1.15.0")
+    implementation("com.squareup.retrofit2:converter-moshi:2.9.0")
+    ksp("com.squareup.moshi:moshi-kotlin-codegen:1.15.0")
+
     //splash screen - removed the androidx.core:core-splashscreen library to avoid drawable issues
     //implementation("androidx.core:core-splashscreen:1.0.1")
 

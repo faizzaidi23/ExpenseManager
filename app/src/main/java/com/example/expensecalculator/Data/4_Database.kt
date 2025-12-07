@@ -26,7 +26,7 @@ import java.util.Date
         TripPhoto::class,
         SettlementPayment::class // --- 3. ADD: SettlementPayment entity to the database
     ],
-    version = 13, // --- 4. Increment version to 13
+    version = 14, // --- 4. Increment version to 14
     exportSchema = false
 )
 abstract class ExpenseDatabase : RoomDatabase() {

@@ -77,4 +77,9 @@ class TripRepository(private val tripDao: TripDao) {
     fun getSettlementPaymentsByTripId(tripId: Int): Flow<List<SettlementPayment>> {
         return tripDao.getSettlementPaymentsByTripIdFlow(tripId)
     }
+
+    // CURRENCY OPERATIONS
+    suspend fun updateTripCurrency(tripId: Int, currency: String) {
+        tripDao.updateTripCurrency(tripId, currency)
+    }
 }
