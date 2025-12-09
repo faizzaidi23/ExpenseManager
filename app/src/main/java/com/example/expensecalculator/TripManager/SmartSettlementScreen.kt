@@ -33,15 +33,11 @@ import androidx.compose.ui.unit.sp
 import com.example.expensecalculator.ui.theme.IconBackground
 import kotlin.math.abs
 
-/**
- * Smart Settlement Screen Component
- * Shows optimized settlement transactions with sharing options
- */
 @Composable
 fun SmartSettlementContent(
     balances: Map<String, Double>,
     settlements: List<Settlement>,
-    currencySymbol: String = "₹", // Add currency parameter
+    currencySymbol: String = "₹",
     onRecordPayment: (String, String, Double) -> Unit = { _, _, _ -> }
 ) {
     val context = LocalContext.current
@@ -148,7 +144,6 @@ fun SmartSettlementContent(
         }
     }
 
-    // Payment Recording Dialog
     if (showPaymentDialog && selectedSettlement != null) {
         RecordPaymentDialog(
             balances = balances,

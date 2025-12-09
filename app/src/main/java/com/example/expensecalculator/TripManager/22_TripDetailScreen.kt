@@ -294,13 +294,19 @@ fun TripDetailScreen(
 
                 // Tab Content
                 when (selectedTabIndex) {
-                    0 -> ExpensesContent(
-                        expensesWithSplits = completeTripDetails?.expensesWithSplits ?: emptyList(),
-                        onDeleteExpense = { viewModel.deleteExpense(it) },
-                        onExpenseClick = { expenseId ->
-                            navController.navigate("trip_expense_detail/$expenseId")
-                        }
-                    )
+                    0 -> {
+                        val currencySymbol = completeTripDetails?.trip?.currency?.let {
+                            com.example.expensecalculator.util.CurrencyCode.fromCode(it).symbol
+                        } ?: "₹"
+                        ExpensesContent(
+                            expensesWithSplits = completeTripDetails?.expensesWithSplits ?: emptyList(),
+                            currencySymbol = currencySymbol,
+                            onDeleteExpense = { viewModel.deleteExpense(it) },
+                            onExpenseClick = { expenseId ->
+                                navController.navigate("trip_expense_detail/$expenseId")
+                            }
+                        )
+                    }
                     1 -> {
                         val currencySymbol = completeTripDetails?.trip?.currency?.let {
                             com.example.expensecalculator.util.CurrencyCode.fromCode(it).symbol
@@ -400,6 +406,7 @@ fun TripDetailScreen(
 @Composable
 fun ExpensesContent(
     expensesWithSplits: List<com.example.expensecalculator.tripData.ExpenseWithSplits>,
+    currencySymbol: String,
     onDeleteExpense: (TripExpense) -> Unit,
     onExpenseClick: (Int) -> Unit = {}
 ) {
@@ -428,7 +435,7 @@ fun ExpensesContent(
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                         Text(
-                            "₹${"%,.2f".format(totalExpenses)}",
+                            "$currencySymbol${"%,.2f".format(totalExpenses)}",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground
@@ -450,7 +457,9 @@ fun ExpensesContent(
                 items(expenses) { expenseWithSplits ->
                     ExpenseCard(
                         expense = expenseWithSplits.expense,
+                        currencySymbol = currencySymbol,
                         onDelete = { onDeleteExpense(expenseWithSplits.expense) },
+                        onEdit = { onExpenseClick(expenseWithSplits.expense.id) },
                         onClick = { onExpenseClick(expenseWithSplits.expense.id) }
                     )
                 }
@@ -532,7 +541,9 @@ private fun TripDetailEmptyState(icon: ImageVector, title: String, subtitle: Str
 @Composable
 fun ExpenseCard(
     expense: TripExpense,
+    currencySymbol: String,
     onDelete: () -> Unit,
+    onEdit: () -> Unit = {},
     onClick: () -> Unit = {}
 ) {
     Card(
@@ -571,15 +582,22 @@ fun ExpenseCard(
                 )
             }
             Text(
-                text = "₹${"%,.0f".format(expense.amount)}",
+                text = "$currencySymbol${"%,.0f".format(expense.amount)}",
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
             )
+            IconButton(onClick = onEdit) {
+                Icon(
+                    Icons.Default.Edit,
+                    "Edit",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
             IconButton(onClick = onDelete) {
                 Icon(
                     Icons.Default.DeleteOutline,
                     "Delete",
-                    tint = MaterialTheme.colorScheme.error
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
         }
