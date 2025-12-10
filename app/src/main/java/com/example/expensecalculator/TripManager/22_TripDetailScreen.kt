@@ -217,7 +217,7 @@ fun TripDetailScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Trip Header
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(18.dp))
                 Box(
                     modifier = Modifier
                         .size(100.dp)
@@ -243,7 +243,7 @@ fun TripDetailScreen(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(13.dp))
                 Text(
                     text = completeTripDetails?.trip?.title ?: "Loading...",
                     fontSize = 28.sp,
