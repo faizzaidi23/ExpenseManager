@@ -239,7 +239,7 @@ fun TripDetailScreen(
                             painter = rememberVectorPainter(Icons.Default.Umbrella),
                             contentDescription = "Default Trip Icon",
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(50.dp)
+                            modifier = Modifier.size(48.dp)
                         )
                     }
                 }
