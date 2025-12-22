@@ -63,6 +63,7 @@ fun TripDetailScreen(
 
     var selectedTabIndex by remember { mutableStateOf(0) }
     var showAddExpenseDialog by remember { mutableStateOf(false) }
+    var showAddCategoryDialog by remember { mutableStateOf(false) }
     var menuExpanded by remember { mutableStateOf(false) }
     var showExportDialog by remember { mutableStateOf(false) }
     var exportResultUri by remember { mutableStateOf<Uri?>(null) }
@@ -316,10 +317,20 @@ fun TripDetailScreen(
                         )
                     }
                     1 -> {
-                        // Categories content - coming soon
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("Categories content - coming soon")
-                        }
+                        val currencySymbol = completeTripDetails?.trip?.currency?.let {
+                            com.example.expensecalculator.util.CurrencyCode.fromCode(it).symbol
+                        } ?: "₹"
+                        val categoriesWithExpenses by viewModel.categoriesWithExpenses.collectAsState()
+
+                        CategoriesContent(
+                            categoriesWithExpenses = categoriesWithExpenses,
+                            currencySymbol = currencySymbol,
+                            onAddCategory = { categoryName -> viewModel.addCategory(categoryName) },
+                            onDeleteCategory = { category -> viewModel.deleteCategory(category) },
+                            onExpenseClick = { expenseId ->
+                                navController.navigate("trip_expense_detail/$expenseId")
+                            }
+                        )
                     }
                     2 -> {
                         val currencySymbol = completeTripDetails?.trip?.currency?.let {
@@ -342,8 +353,8 @@ fun TripDetailScreen(
                 }
             }
 
-            // Custom FAB - only show for Expenses and Photos tabs
-            if (selectedTabIndex == 0 || selectedTabIndex == 3) {
+            // Custom FAB - only show for Expenses, Categories, and Photos tabs
+            if (selectedTabIndex == 0 || selectedTabIndex == 1 || selectedTabIndex == 3) {
                 Column(
                     modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -352,6 +363,7 @@ fun TripDetailScreen(
                         onClick = {
                             when (selectedTabIndex) {
                                 0 -> showAddExpenseDialog = true
+                                1 -> showAddCategoryDialog = true
                                 3 -> imagePickerLauncher.launch("image/*")
                             }
                         },
@@ -360,13 +372,21 @@ fun TripDetailScreen(
                     ) {
                         Icon(
                             Icons.Default.Add,
-                            if (selectedTabIndex == 0) "Add Expense" else "Add Photo",
+                            when (selectedTabIndex) {
+                                0 -> "Add Expense"
+                                1 -> "Add Category"
+                                else -> "Add Photo"
+                            },
                             tint = Color.White
                         )
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        if (selectedTabIndex == 0) "Add Expense" else "Add Photo",
+                        when (selectedTabIndex) {
+                            0 -> "Add Expense"
+                            1 -> "Add Category"
+                            else -> "Add Photo"
+                        },
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         fontSize = 12.sp
                     )
@@ -378,10 +398,30 @@ fun TripDetailScreen(
     if (showAddExpenseDialog) {
         AddExpenseDialogWithSplits(
             participants = currentTripParticipants,
+            categories = viewModel.currentTripCategories.collectAsState().value,
             onDismiss = { showAddExpenseDialog = false },
-            onAddExpense = { expenseName, amount, paidBy, participantsInSplit ->
-                viewModel.addExpense(expenseName, amount, paidBy, participantsInSplit)
+            onAddExpense = { expenseName, amount, paidBy, participantsInSplit, categoryId ->
+                viewModel.addExpense(expenseName, amount, paidBy, participantsInSplit, categoryId)
                 showAddExpenseDialog = false
+            },
+            onCreateCategory = { categoryName, color ->
+                val colorString = String.format("#%06X", (0xFFFFFF and android.graphics.Color.rgb(
+                    (color.red * 255).toInt(),
+                    (color.green * 255).toInt(),
+                    (color.blue * 255).toInt()
+                )))
+                viewModel.addCategory(categoryName, colorString)
+            }
+        )
+    }
+
+    // Add Category Dialog
+    if (showAddCategoryDialog) {
+        AddCategoryDialog(
+            onDismiss = { showAddCategoryDialog = false },
+            onAddCategory = { categoryName ->
+                viewModel.addCategory(categoryName)
+                showAddCategoryDialog = false
             }
         )
     }
@@ -630,13 +670,17 @@ fun ExpenseCard(
 @Composable
 fun AddExpenseDialogWithSplits(
     participants: List<TripParticipant>,
+    categories: List<com.example.expensecalculator.tripData.ExpenseCategory>,
     onDismiss: () -> Unit,
-    onAddExpense: (String, Double, String, List<String>) -> Unit
+    onAddExpense: (String, Double, String, List<String>, Int?) -> Unit,
+    onCreateCategory: (String, Color) -> Unit
 ) {
     var expenseName by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
     var paidBy by remember { mutableStateOf(participants.firstOrNull()) }
+    var selectedCategory by remember { mutableStateOf<com.example.expensecalculator.tripData.ExpenseCategory?>(null) }
     var splitParticipants by remember { mutableStateOf(participants.map { it.participantName }.toSet()) }
+    var showCreateCategoryDialog by remember { mutableStateOf(false) }
 
     val amountValue = amount.toDoubleOrNull() ?: 0.0
     val splitValue = if (splitParticipants.isNotEmpty()) amountValue / splitParticipants.size else 0.0
@@ -659,10 +703,10 @@ fun AddExpenseDialogWithSplits(
                     label = { Text("Amount *") }
                 )
 
-                var expanded by remember { mutableStateOf(false) }
+                var paidByExpanded by remember { mutableStateOf(false) }
                 ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = !expanded }
+                    expanded = paidByExpanded,
+                    onExpandedChange = { paidByExpanded = !paidByExpanded }
                 ) {
                     OutlinedTextField(
                         value = paidBy?.participantName ?: "Select Payer",
@@ -670,20 +714,105 @@ fun AddExpenseDialogWithSplits(
                         readOnly = true,
                         label = { Text("Paid By *") },
                         trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = paidByExpanded)
                         },
                         modifier = Modifier.menuAnchor()
                     )
                     ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
+                        expanded = paidByExpanded,
+                        onDismissRequest = { paidByExpanded = false }
                     ) {
                         participants.forEach { participant ->
                             DropdownMenuItem(
                                 text = { Text(participant.participantName) },
                                 onClick = {
                                     paidBy = participant
-                                    expanded = false
+                                    paidByExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // Category selection dropdown - always shown
+                var categoryExpanded by remember { mutableStateOf(false) }
+                ExposedDropdownMenuBox(
+                    expanded = categoryExpanded,
+                    onExpandedChange = { categoryExpanded = !categoryExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = selectedCategory?.categoryName ?: "No Category",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Category (Optional)") },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded)
+                        },
+                        modifier = Modifier.menuAnchor(),
+                        leadingIcon = selectedCategory?.let {
+                            {
+                                Box(
+                                    modifier = Modifier
+                                        .size(16.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(android.graphics.Color.parseColor(it.color)))
+                                )
+                            }
+                        }
+                    )
+                    ExposedDropdownMenu(
+                        expanded = categoryExpanded,
+                        onDismissRequest = { categoryExpanded = false }
+                    ) {
+                        // Add new category option
+                        DropdownMenuItem(
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        Icons.Default.Add,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Create New Category", fontWeight = FontWeight.Medium)
+                                }
+                            },
+                            onClick = {
+                                categoryExpanded = false
+                                showCreateCategoryDialog = true
+                            }
+                        )
+
+                        if (categories.isNotEmpty()) {
+                            HorizontalDivider()
+                        }
+
+                        DropdownMenuItem(
+                            text = { Text("No Category") },
+                            onClick = {
+                                selectedCategory = null
+                                categoryExpanded = false
+                            }
+                        )
+
+                        categories.forEach { category ->
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(16.dp)
+                                                .clip(CircleShape)
+                                                .background(Color(android.graphics.Color.parseColor(category.color)))
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(category.categoryName)
+                                    }
+                                },
+                                onClick = {
+                                    selectedCategory = category
+                                    categoryExpanded = false
                                 }
                             )
                         }
@@ -732,7 +861,7 @@ fun AddExpenseDialogWithSplits(
             Button(
                 onClick = {
                     if (expenseName.isNotBlank() && amountValue > 0 && paidBy != null && splitParticipants.isNotEmpty()) {
-                        onAddExpense(expenseName, amountValue, paidBy!!.participantName, splitParticipants.toList())
+                        onAddExpense(expenseName, amountValue, paidBy!!.participantName, splitParticipants.toList(), selectedCategory?.id)
                     }
                 },
                 enabled = expenseName.isNotBlank() && amountValue > 0 && paidBy != null && splitParticipants.isNotEmpty()
@@ -742,6 +871,17 @@ fun AddExpenseDialogWithSplits(
             TextButton(onClick = onDismiss) { Text("Cancel") }
         }
     )
+
+    // Create category dialog from expense dialog
+    if (showCreateCategoryDialog) {
+        CreateCategoryFromExpenseDialog(
+            onDismiss = { showCreateCategoryDialog = false },
+            onCategoryCreated = { categoryName, color ->
+                onCreateCategory(categoryName, color)
+                showCreateCategoryDialog = false
+            }
+        )
+    }
 }
 
 @Composable
@@ -886,5 +1026,316 @@ fun FullScreenPhotoDialog(
         modifier = Modifier
             .fillMaxWidth(0.95f)
             .padding(16.dp)
+    )
+}
+
+// CATEGORIES CONTENT IMPLEMENTATION
+@Composable
+fun CategoriesContent(
+    categoriesWithExpenses: List<com.example.expensecalculator.tripData.CategoryWithExpenses>,
+    currencySymbol: String,
+    onAddCategory: (String) -> Unit,
+    onDeleteCategory: (com.example.expensecalculator.tripData.ExpenseCategory) -> Unit,
+    onExpenseClick: (Int) -> Unit
+) {
+    var showAddCategoryDialog by remember { mutableStateOf(false) }
+
+    if (categoriesWithExpenses.isEmpty()) {
+        TripDetailEmptyState(
+            icon = Icons.Default.Category,
+            title = "No Categories Yet",
+            subtitle = "Categories will appear here once you add expenses\nwith category assignments"
+        )
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(categoriesWithExpenses) { categoryWithExpenses ->
+                CategoryCard(
+                    categoryWithExpenses = categoryWithExpenses,
+                    currencySymbol = currencySymbol,
+                    onDeleteCategory = onDeleteCategory,
+                    onExpenseClick = onExpenseClick
+                )
+            }
+        }
+    }
+
+    if (showAddCategoryDialog) {
+        AddCategoryDialog(
+            onDismiss = { showAddCategoryDialog = false },
+            onAddCategory = { categoryName ->
+                onAddCategory(categoryName)
+                showAddCategoryDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+fun CategoryCard(
+    categoryWithExpenses: com.example.expensecalculator.tripData.CategoryWithExpenses,
+    currencySymbol: String,
+    onDeleteCategory: (com.example.expensecalculator.tripData.ExpenseCategory) -> Unit,
+    onExpenseClick: (Int) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val category = categoryWithExpenses.category
+    val expenses = categoryWithExpenses.expenses
+    val totalAmount = expenses.sumOf { it.expense.amount }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // Category Header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded }
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Category color indicator
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color(android.graphics.Color.parseColor(category.color)))
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        category.categoryName,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Text(
+                        "${expenses.size} expense${if (expenses.size != 1) "s" else ""}",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+
+                Text(
+                    "$currencySymbol${"%,.2f".format(totalAmount)}",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+
+                Icon(
+                    if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+            }
+
+            // Expanded expenses list
+            if (expanded && expenses.isNotEmpty()) {
+                HorizontalDivider()
+                Column(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    expenses.forEach { expenseWithSplits ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onExpenseClick(expenseWithSplits.expense.id) }
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ReceiptLong,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    expenseWithSplits.expense.expenseName,
+                                    fontWeight = FontWeight.Medium,
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.onBackground
+                                )
+                                Text(
+                                    "Paid by: ${expenseWithSplits.expense.paidBy}",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                )
+                            }
+                            Text(
+                                "$currencySymbol${"%,.2f".format(expenseWithSplits.expense.amount)}",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
+                        if (expenseWithSplits != expenses.last()) {
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AddCategoryDialog(
+    onDismiss: () -> Unit,
+    onAddCategory: (String) -> Unit
+) {
+    var categoryName by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add New Category", fontWeight = FontWeight.Bold) },
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = MaterialTheme.shapes.large,
+        text = {
+            OutlinedTextField(
+                value = categoryName,
+                onValueChange = { categoryName = it },
+                label = { Text("Category Name *") },
+                placeholder = { Text("e.g., Food, Transport") },
+                singleLine = true
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (categoryName.isNotBlank()) {
+                        onAddCategory(categoryName.trim())
+                    }
+                },
+                enabled = categoryName.isNotBlank()
+            ) {
+                Text("Add")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CreateCategoryFromExpenseDialog(
+    onDismiss: () -> Unit,
+    onCategoryCreated: (String, Color) -> Unit
+) {
+    var categoryName by remember { mutableStateOf("") }
+    var selectedColor by remember { mutableStateOf(Color(android.graphics.Color.parseColor("#6200EE"))) } // Default to purple
+    val colors = listOf(
+        Color(android.graphics.Color.parseColor("#6200EE")), // Purple
+        Color(android.graphics.Color.parseColor("#03DAC5")), // Teal
+        Color(android.graphics.Color.parseColor("#FF5722")), // Deep Orange
+        Color(android.graphics.Color.parseColor("#F44336")), // Red
+        Color(android.graphics.Color.parseColor("#E91E63")), // Pink
+        Color(android.graphics.Color.parseColor("#9C27B0")), // Deep Purple
+        Color(android.graphics.Color.parseColor("#673AB7")), // Indigo
+        Color(android.graphics.Color.parseColor("#3F51B5")), // Blue
+        Color(android.graphics.Color.parseColor("#2196F3")), // Light Blue
+        Color(android.graphics.Color.parseColor("#03A9F4")), // Cyan
+        Color(android.graphics.Color.parseColor("#00BCD4")), // Aqua
+        Color(android.graphics.Color.parseColor("#009688")), // Teal
+        Color(android.graphics.Color.parseColor("#4CAF50")), // Green
+        Color(android.graphics.Color.parseColor("#8BC34A")), // Light Green
+        Color(android.graphics.Color.parseColor("#CDDC39")), // Lime
+        Color(android.graphics.Color.parseColor("#FFEB3B")), // Yellow
+        Color(android.graphics.Color.parseColor("#FFC107")), // Amber
+        Color(android.graphics.Color.parseColor("#FF9800")), // Orange
+        Color(android.graphics.Color.parseColor("#FF5722")), // Deep Orange
+        Color(android.graphics.Color.parseColor("#795548")), // Brown
+        Color(android.graphics.Color.parseColor("#9E9E9E")), // Grey
+        Color(android.graphics.Color.parseColor("#607D8B"))  // Blue Grey
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Create New Category", fontWeight = FontWeight.Bold) },
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = MaterialTheme.shapes.large,
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                OutlinedTextField(
+                    value = categoryName,
+                    onValueChange = { categoryName = it },
+                    label = { Text("Category Name *") },
+                    placeholder = { Text("e.g., Food, Transport") },
+                    singleLine = true
+                )
+
+                // Color selection
+                Text(
+                    "Select Color",
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                LazyColumn(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    contentPadding = PaddingValues(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(colors.chunked(4)) { rowColors ->
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            rowColors.forEach { color ->
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .background(color)
+                                        .clickable {
+                                            selectedColor = color
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (selectedColor == color) {
+                                        Icon(
+                                            Icons.Default.Check,
+                                            contentDescription = "Selected",
+                                            tint = Color.White
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (categoryName.isNotBlank()) {
+                        onCategoryCreated(categoryName.trim(), selectedColor)
+                    }
+                },
+                enabled = categoryName.isNotBlank()
+            ) {
+                Text("Create")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
     )
 }
