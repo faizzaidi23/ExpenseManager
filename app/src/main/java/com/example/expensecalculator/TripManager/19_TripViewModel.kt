@@ -221,17 +221,18 @@ class TripViewModel(
         }
     }
 
-    fun addCategory(categoryName: String, color: String = "#6200EE") {
+    fun addCategory(categoryName: String) {
         val tripId = _completeTripDetails.value?.trip?.id ?: return
         viewModelScope.launch {
             val category = ExpenseCategory(
                 tripId = tripId,
                 categoryName = categoryName,
-                color = color
+                color = null // No color assigned
             )
             repository.addCategory(category)
         }
     }
+
 
     fun deleteCategory(category: ExpenseCategory) {
         viewModelScope.launch {

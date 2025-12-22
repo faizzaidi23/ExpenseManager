@@ -28,7 +28,7 @@ import java.util.Date
         SettlementPayment::class,
         ExpenseCategory::class // Add ExpenseCategory entity
     ],
-    version = 15, // Increment version to 15
+    version = 16, // Increment version to 16 to handle nullable color field
     exportSchema = false
 )
 abstract class ExpenseDatabase : RoomDatabase() {

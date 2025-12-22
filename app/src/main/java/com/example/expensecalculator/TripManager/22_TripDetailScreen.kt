@@ -404,13 +404,8 @@ fun TripDetailScreen(
                 viewModel.addExpense(expenseName, amount, paidBy, participantsInSplit, categoryId)
                 showAddExpenseDialog = false
             },
-            onCreateCategory = { categoryName, color ->
-                val colorString = String.format("#%06X", (0xFFFFFF and android.graphics.Color.rgb(
-                    (color.red * 255).toInt(),
-                    (color.green * 255).toInt(),
-                    (color.blue * 255).toInt()
-                )))
-                viewModel.addCategory(categoryName, colorString)
+            onCreateCategory = { categoryName ->
+                viewModel.addCategory(categoryName)
             }
         )
     }
@@ -673,7 +668,7 @@ fun AddExpenseDialogWithSplits(
     categories: List<com.example.expensecalculator.tripData.ExpenseCategory>,
     onDismiss: () -> Unit,
     onAddExpense: (String, Double, String, List<String>, Int?) -> Unit,
-    onCreateCategory: (String, Color) -> Unit
+    onCreateCategory: (String) -> Unit
 ) {
     var expenseName by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
@@ -748,17 +743,7 @@ fun AddExpenseDialogWithSplits(
                         trailingIcon = {
                             ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded)
                         },
-                        modifier = Modifier.menuAnchor(),
-                        leadingIcon = selectedCategory?.let {
-                            {
-                                Box(
-                                    modifier = Modifier
-                                        .size(16.dp)
-                                        .clip(CircleShape)
-                                        .background(Color(android.graphics.Color.parseColor(it.color)))
-                                )
-                            }
-                        }
+                        modifier = Modifier.menuAnchor()
                     )
                     ExposedDropdownMenu(
                         expanded = categoryExpanded,
@@ -798,18 +783,7 @@ fun AddExpenseDialogWithSplits(
 
                         categories.forEach { category ->
                             DropdownMenuItem(
-                                text = {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(16.dp)
-                                                .clip(CircleShape)
-                                                .background(Color(android.graphics.Color.parseColor(category.color)))
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(category.categoryName)
-                                    }
-                                },
+                                text = { Text(category.categoryName) },
                                 onClick = {
                                     selectedCategory = category
                                     categoryExpanded = false
@@ -876,8 +850,8 @@ fun AddExpenseDialogWithSplits(
     if (showCreateCategoryDialog) {
         CreateCategoryFromExpenseDialog(
             onDismiss = { showCreateCategoryDialog = false },
-            onCategoryCreated = { categoryName, color ->
-                onCreateCategory(categoryName, color)
+            onCategoryCreated = { categoryName ->
+                onCreateCategory(categoryName)
                 showCreateCategoryDialog = false
             }
         )
@@ -1101,15 +1075,6 @@ fun CategoryCard(
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Category color indicator
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(Color(android.graphics.Color.parseColor(category.color)))
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         category.categoryName,
@@ -1130,6 +1095,8 @@ fun CategoryCard(
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onBackground
                 )
+
+                Spacer(modifier = Modifier.width(8.dp))
 
                 Icon(
                     if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
@@ -1235,34 +1202,9 @@ fun AddCategoryDialog(
 @Composable
 fun CreateCategoryFromExpenseDialog(
     onDismiss: () -> Unit,
-    onCategoryCreated: (String, Color) -> Unit
+    onCategoryCreated: (String) -> Unit
 ) {
     var categoryName by remember { mutableStateOf("") }
-    var selectedColor by remember { mutableStateOf(Color(android.graphics.Color.parseColor("#6200EE"))) } // Default to purple
-    val colors = listOf(
-        Color(android.graphics.Color.parseColor("#6200EE")), // Purple
-        Color(android.graphics.Color.parseColor("#03DAC5")), // Teal
-        Color(android.graphics.Color.parseColor("#FF5722")), // Deep Orange
-        Color(android.graphics.Color.parseColor("#F44336")), // Red
-        Color(android.graphics.Color.parseColor("#E91E63")), // Pink
-        Color(android.graphics.Color.parseColor("#9C27B0")), // Deep Purple
-        Color(android.graphics.Color.parseColor("#673AB7")), // Indigo
-        Color(android.graphics.Color.parseColor("#3F51B5")), // Blue
-        Color(android.graphics.Color.parseColor("#2196F3")), // Light Blue
-        Color(android.graphics.Color.parseColor("#03A9F4")), // Cyan
-        Color(android.graphics.Color.parseColor("#00BCD4")), // Aqua
-        Color(android.graphics.Color.parseColor("#009688")), // Teal
-        Color(android.graphics.Color.parseColor("#4CAF50")), // Green
-        Color(android.graphics.Color.parseColor("#8BC34A")), // Light Green
-        Color(android.graphics.Color.parseColor("#CDDC39")), // Lime
-        Color(android.graphics.Color.parseColor("#FFEB3B")), // Yellow
-        Color(android.graphics.Color.parseColor("#FFC107")), // Amber
-        Color(android.graphics.Color.parseColor("#FF9800")), // Orange
-        Color(android.graphics.Color.parseColor("#FF5722")), // Deep Orange
-        Color(android.graphics.Color.parseColor("#795548")), // Brown
-        Color(android.graphics.Color.parseColor("#9E9E9E")), // Grey
-        Color(android.graphics.Color.parseColor("#607D8B"))  // Blue Grey
-    )
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1270,61 +1212,19 @@ fun CreateCategoryFromExpenseDialog(
         containerColor = MaterialTheme.colorScheme.surface,
         shape = MaterialTheme.shapes.large,
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                OutlinedTextField(
-                    value = categoryName,
-                    onValueChange = { categoryName = it },
-                    label = { Text("Category Name *") },
-                    placeholder = { Text("e.g., Food, Transport") },
-                    singleLine = true
-                )
-
-                // Color selection
-                Text(
-                    "Select Color",
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.titleMedium
-                )
-                LazyColumn(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    contentPadding = PaddingValues(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(colors.chunked(4)) { rowColors ->
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            rowColors.forEach { color ->
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .clip(CircleShape)
-                                        .background(color)
-                                        .clickable {
-                                            selectedColor = color
-                                        },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    if (selectedColor == color) {
-                                        Icon(
-                                            Icons.Default.Check,
-                                            contentDescription = "Selected",
-                                            tint = Color.White
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            OutlinedTextField(
+                value = categoryName,
+                onValueChange = { categoryName = it },
+                label = { Text("Category Name *") },
+                placeholder = { Text("e.g., Food, Transport") },
+                singleLine = true
+            )
         },
         confirmButton = {
             Button(
                 onClick = {
                     if (categoryName.isNotBlank()) {
-                        onCategoryCreated(categoryName.trim(), selectedColor)
+                        onCategoryCreated(categoryName.trim())
                     }
                 },
                 enabled = categoryName.isNotBlank()

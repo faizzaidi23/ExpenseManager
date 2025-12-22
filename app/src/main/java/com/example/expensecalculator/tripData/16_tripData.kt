@@ -42,7 +42,7 @@ data class ExpenseCategory(
     val tripId: Int,
     val categoryName: String,
     val iconName: String = "Category", // For future icon support
-    val color: String = "#6200EE" // Color in hex format
+    val color: String? = null // Color in hex format - nullable, no default
 )
 
 @Entity(
