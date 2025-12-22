@@ -31,10 +31,26 @@ data class TripParticipant(
     val email: String? = null
 )
 
+// Expense Category Entity
+@Entity(
+    tableName = "expense_categories",
+    foreignKeys = [ForeignKey(entity = Trip::class, parentColumns = ["id"], childColumns = ["tripId"], onDelete = ForeignKey.CASCADE)]
+)
+data class ExpenseCategory(
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
+    val tripId: Int,
+    val categoryName: String,
+    val iconName: String = "Category", // For future icon support
+    val color: String = "#6200EE" // Color in hex format
+)
 
 @Entity(
     tableName = "tripExpense",
-    foreignKeys = [ForeignKey(entity = Trip::class, parentColumns = ["id"], childColumns = ["tripId"], onDelete = ForeignKey.CASCADE)]
+    foreignKeys = [
+        ForeignKey(entity = Trip::class, parentColumns = ["id"], childColumns = ["tripId"], onDelete = ForeignKey.CASCADE),
+        ForeignKey(entity = ExpenseCategory::class, parentColumns = ["id"], childColumns = ["categoryId"], onDelete = ForeignKey.SET_NULL)
+    ]
 )
 data class TripExpense(
     @PrimaryKey(autoGenerate = true)
@@ -44,7 +60,8 @@ data class TripExpense(
     val amount: Double,
     val paidBy: String, // The name of the participant who paid
     val date: String? = null,
-    val splitType: String = "EQUALLY"
+    val splitType: String = "EQUALLY",
+    val categoryId: Int? = null // Foreign key to ExpenseCategory
 )
 
 // This is the crucial new table to track splits
@@ -76,16 +93,31 @@ data class TripPhoto(
     val timestamp: Long = System.currentTimeMillis()
 )
 
-// Helper class to bundle an expense with its splits
+// Helper class to bundle an expense with its splits and category
 data class ExpenseWithSplits(
     @Embedded val expense: TripExpense,
     @Relation(
         parentColumn = "id",
         entityColumn = "expenseId"
     )
-    val splits: List<ExpenseSplit>
+    val splits: List<ExpenseSplit>,
+    @Relation(
+        parentColumn = "categoryId",
+        entityColumn = "id"
+    )
+    val category: ExpenseCategory? = null
 )
 
+// Helper class for category with its expenses
+data class CategoryWithExpenses(
+    @Embedded val category: ExpenseCategory,
+    @Relation(
+        parentColumn = "id",
+        entityColumn = "categoryId",
+        entity = TripExpense::class
+    )
+    val expenses: List<ExpenseWithSplits>
+)
 
 data class CompleteTripDetails(
     @Embedded val trip: Trip,
@@ -104,5 +136,10 @@ data class CompleteTripDetails(
         parentColumn = "id",
         entityColumn = "tripId"
     )
-    val photos: List<TripPhoto> = emptyList()
+    val photos: List<TripPhoto> = emptyList(),
+    @Relation(
+        parentColumn = "id",
+        entityColumn = "tripId"
+    )
+    val categories: List<ExpenseCategory> = emptyList()
 )

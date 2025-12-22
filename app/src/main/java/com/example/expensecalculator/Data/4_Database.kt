@@ -12,6 +12,7 @@ import com.example.expensecalculator.tripData.TripExpense
 import com.example.expensecalculator.tripData.TripParticipant
 import com.example.expensecalculator.tripData.TripPhoto
 import com.example.expensecalculator.tripData.SettlementPayment // --- 2. ADD: Import for the SettlementPayment entity
+import com.example.expensecalculator.tripData.ExpenseCategory // Import for the ExpenseCategory entity
 import java.util.Date
 
 @TypeConverters(Converters::class)
@@ -24,9 +25,10 @@ import java.util.Date
         TripExpense::class,
         ExpenseSplit::class,
         TripPhoto::class,
-        SettlementPayment::class // --- 3. ADD: SettlementPayment entity to the database
+        SettlementPayment::class,
+        ExpenseCategory::class // Add ExpenseCategory entity
     ],
-    version = 14, // --- 4. Increment version to 14
+    version = 15, // Increment version to 15
     exportSchema = false
 )
 abstract class ExpenseDatabase : RoomDatabase() {

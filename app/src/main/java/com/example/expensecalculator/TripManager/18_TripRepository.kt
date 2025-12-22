@@ -82,4 +82,29 @@ class TripRepository(private val tripDao: TripDao) {
     suspend fun updateTripCurrency(tripId: Int, currency: String) {
         tripDao.updateTripCurrency(tripId, currency)
     }
+
+    // CATEGORY OPERATIONS
+    suspend fun addCategory(category: ExpenseCategory): Long {
+        return tripDao.addCategory(category)
+    }
+
+    suspend fun deleteCategory(category: ExpenseCategory) {
+        tripDao.deleteCategory(category)
+    }
+
+    fun getCategoriesByTripId(tripId: Int): Flow<List<ExpenseCategory>> {
+        return tripDao.getCategoriesByTripIdFlow(tripId)
+    }
+
+    fun getCategoriesWithExpenses(tripId: Int): Flow<List<CategoryWithExpenses>> {
+        return tripDao.getCategoriesWithExpensesFlow(tripId)
+    }
+
+    suspend fun getCategoryById(categoryId: Int): ExpenseCategory? {
+        return tripDao.getCategoryById(categoryId)
+    }
+
+    suspend fun createDefaultCategories(tripId: Int) {
+        tripDao.createDefaultCategories(tripId)
+    }
 }

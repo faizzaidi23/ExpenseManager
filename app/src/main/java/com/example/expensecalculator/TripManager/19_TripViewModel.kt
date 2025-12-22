@@ -10,6 +10,8 @@ import com.example.expensecalculator.Storage.ExportFormat
 import com.example.expensecalculator.network.RetrofitClient
 import com.example.expensecalculator.repository.ExchangeRateRepository
 import com.example.expensecalculator.tripData.CompleteTripDetails
+import com.example.expensecalculator.tripData.ExpenseCategory
+import com.example.expensecalculator.tripData.CategoryWithExpenses
 import com.example.expensecalculator.tripData.ExpenseSplit
 import com.example.expensecalculator.tripData.ExpenseWithSplits
 import com.example.expensecalculator.tripData.SettlementPayment
@@ -159,7 +161,8 @@ class TripViewModel(
         expenseName: String,
         amount: Double,
         paidBy: String,
-        participantsInSplit: List<String>
+        participantsInSplit: List<String>,
+        categoryId: Int? = null
     ) {
         val tripId = _completeTripDetails.value?.trip?.id ?: return
         val currentDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
@@ -170,7 +173,8 @@ class TripViewModel(
                 expenseName = expenseName,
                 amount = amount,
                 paidBy = paidBy,
-                date = currentDate
+                date = currentDate,
+                categoryId = categoryId
             )
 
             val shareAmount = amount / participantsInSplit.size
@@ -201,6 +205,41 @@ class TripViewModel(
         it?.photos ?: emptyList()
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
+    // CATEGORY OPERATIONS
+    val currentTripCategories: StateFlow<List<ExpenseCategory>> = _completeTripDetails.map {
+        it?.categories ?: emptyList()
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    private val _categoriesWithExpenses = MutableStateFlow<List<CategoryWithExpenses>>(emptyList())
+    val categoriesWithExpenses: StateFlow<List<CategoryWithExpenses>> = _categoriesWithExpenses.asStateFlow()
+
+    fun loadCategoriesWithExpenses(tripId: Int) {
+        viewModelScope.launch {
+            repository.getCategoriesWithExpenses(tripId).collect { categories ->
+                _categoriesWithExpenses.value = categories
+            }
+        }
+    }
+
+    fun addCategory(categoryName: String, color: String = "#6200EE") {
+        val tripId = _completeTripDetails.value?.trip?.id ?: return
+        viewModelScope.launch {
+            val category = ExpenseCategory(
+                tripId = tripId,
+                categoryName = categoryName,
+                color = color
+            )
+            repository.addCategory(category)
+        }
+    }
+
+    fun deleteCategory(category: ExpenseCategory) {
+        viewModelScope.launch {
+            repository.deleteCategory(category)
+        }
+    }
+
+    // PHOTO OPERATIONS
     fun addPhoto(photoUri: String, caption: String? = null) {
         val tripId = _completeTripDetails.value?.trip?.id ?: return
         viewModelScope.launch {

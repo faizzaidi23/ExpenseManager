@@ -105,4 +105,38 @@ interface TripDao {
     // Currency operations
     @Query("UPDATE trips SET currency = :currency WHERE id = :tripId")
     suspend fun updateTripCurrency(tripId: Int, currency: String)
+
+    // Category operations
+    @Insert
+    suspend fun addCategory(category: ExpenseCategory): Long
+
+    @Update
+    suspend fun updateCategory(category: ExpenseCategory)
+
+    @Delete
+    suspend fun deleteCategory(category: ExpenseCategory)
+
+    @Query("SELECT * FROM expense_categories WHERE tripId = :tripId ORDER BY categoryName ASC")
+    fun getCategoriesByTripIdFlow(tripId: Int): Flow<List<ExpenseCategory>>
+
+    @Transaction
+    @Query("SELECT * FROM expense_categories WHERE tripId = :tripId ORDER BY categoryName ASC")
+    fun getCategoriesWithExpensesFlow(tripId: Int): Flow<List<CategoryWithExpenses>>
+
+    @Query("SELECT * FROM expense_categories WHERE id = :categoryId")
+    suspend fun getCategoryById(categoryId: Int): ExpenseCategory?
+
+    // Default categories for a new trip
+    @Transaction
+    suspend fun createDefaultCategories(tripId: Int) {
+        val defaultCategories = listOf(
+            ExpenseCategory(tripId = tripId, categoryName = "Food", iconName = "Restaurant", color = "#FF6B6B"),
+            ExpenseCategory(tripId = tripId, categoryName = "Transport", iconName = "DirectionsCar", color = "#4ECDC4"),
+            ExpenseCategory(tripId = tripId, categoryName = "Accommodation", iconName = "Hotel", color = "#95E1D3"),
+            ExpenseCategory(tripId = tripId, categoryName = "Entertainment", iconName = "LocalActivity", color = "#F38181"),
+            ExpenseCategory(tripId = tripId, categoryName = "Shopping", iconName = "ShoppingCart", color = "#AA96DA"),
+            ExpenseCategory(tripId = tripId, categoryName = "Other", iconName = "MoreHoriz", color = "#FCBAD3")
+        )
+        defaultCategories.forEach { addCategory(it) }
+    }
 }

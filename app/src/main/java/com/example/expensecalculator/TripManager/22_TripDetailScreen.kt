@@ -126,6 +126,7 @@ fun TripDetailScreen(
 
     LaunchedEffect(tripId) {
         viewModel.setCurrentTrip(tripId)
+        viewModel.loadCategoriesWithExpenses(tripId)
     }
 
     DisposableEffect(Unit) {
@@ -272,21 +273,28 @@ fun TripDetailScreen(
                     Tab(
                         selected = selectedTabIndex == 0,
                         onClick = { selectedTabIndex = 0 },
-                        text = { Text("Expenses") },
+                        text = { Text("Expenses", fontSize = 15.sp) },
                         selectedContentColor = MaterialTheme.colorScheme.primary,
                         unselectedContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                     Tab(
                         selected = selectedTabIndex == 1,
                         onClick = { selectedTabIndex = 1 },
-                        text = { Text("Balances") },
+                        text = { Text("Categories",fontSize=13.sp) },
                         selectedContentColor = MaterialTheme.colorScheme.primary,
-                        unselectedContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        unselectedContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
                     Tab(
                         selected = selectedTabIndex == 2,
                         onClick = { selectedTabIndex = 2 },
-                        text = { Text("Photos") },
+                        text = { Text("Balances", fontSize = 15.sp) },
+                        selectedContentColor = MaterialTheme.colorScheme.primary,
+                        unselectedContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                    Tab(
+                        selected = selectedTabIndex == 3,
+                        onClick = { selectedTabIndex = 3 },
+                        text = { Text("Photos",fontSize=15.sp) },
                         selectedContentColor = MaterialTheme.colorScheme.primary,
                         unselectedContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
@@ -308,6 +316,12 @@ fun TripDetailScreen(
                         )
                     }
                     1 -> {
+                        // Categories content - coming soon
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("Categories content - coming soon")
+                        }
+                    }
+                    2 -> {
                         val currencySymbol = completeTripDetails?.trip?.currency?.let {
                             com.example.expensecalculator.util.CurrencyCode.fromCode(it).symbol
                         } ?: "₹"
@@ -320,7 +334,7 @@ fun TripDetailScreen(
                             }
                         )
                     }
-                    2 -> PhotosContent(
+                    3 -> PhotosContent(
                         photos = currentTripPhotos,
                         onAddPhoto = { imagePickerLauncher.launch("image/*") },
                         onDeletePhoto = { viewModel.deletePhoto(it) }
@@ -329,7 +343,7 @@ fun TripDetailScreen(
             }
 
             // Custom FAB - only show for Expenses and Photos tabs
-            if (selectedTabIndex == 0 || selectedTabIndex == 2) {
+            if (selectedTabIndex == 0 || selectedTabIndex == 3) {
                 Column(
                     modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -338,7 +352,7 @@ fun TripDetailScreen(
                         onClick = {
                             when (selectedTabIndex) {
                                 0 -> showAddExpenseDialog = true
-                                2 -> imagePickerLauncher.launch("image/*")
+                                3 -> imagePickerLauncher.launch("image/*")
                             }
                         },
                         containerColor = MaterialTheme.colorScheme.primary,
@@ -553,7 +567,9 @@ fun ExpenseCard(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(
@@ -592,14 +608,14 @@ fun ExpenseCard(
                     color = MaterialTheme.colorScheme.onBackground
                 )
             }
-            IconButton(onClick = onEdit) {
+            IconButton(onClick = { onEdit() }) {
                 Icon(
                     Icons.Default.Edit,
                     "Edit",
                     tint = MaterialTheme.colorScheme.primary
                 )
             }
-            IconButton(onClick = onDelete) {
+            IconButton(onClick = { onDelete() }) {
                 Icon(
                     Icons.Default.DeleteOutline,
                     "Delete",
