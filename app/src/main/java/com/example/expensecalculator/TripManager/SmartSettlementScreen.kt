@@ -45,8 +45,6 @@ fun SmartSettlementContent(
     val context = LocalContext.current
     val isAllSettled = balances.values.all { abs(it) < 0.01 }
     var expandedSettlementId by remember { mutableStateOf<Int?>(null) }
-    var showPaymentDialog by remember { mutableStateOf(false) }
-    var selectedSettlement by remember { mutableStateOf<Settlement?>(null) }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -94,9 +92,9 @@ fun SmartSettlementContent(
                     onShareClick = {
                         shareSettlement(context, settlement, currencySymbol)
                     },
-                    onRecordPayment = {
-                        selectedSettlement = settlement
-                        showPaymentDialog = true
+                    onMarkPaid = {
+                        onRecordPayment(settlement.from, settlement.to, settlement.amount)
+                        Toast.makeText(context, "Payment recorded", Toast.LENGTH_SHORT).show()
                     }
                 )
             }
@@ -144,23 +142,6 @@ fun SmartSettlementContent(
                 )
             }
         }
-    }
-
-    if (showPaymentDialog && selectedSettlement != null) {
-        RecordPaymentDialog(
-            balances = balances,
-            preselectedSettlement = selectedSettlement,
-            currencySymbol = currencySymbol,
-            onDismiss = {
-                showPaymentDialog = false
-                selectedSettlement = null
-            },
-            onConfirm = { from, to, amount ->
-                onRecordPayment(from, to, amount)
-                showPaymentDialog = false
-                selectedSettlement = null
-            }
-        )
     }
 }
 
@@ -211,7 +192,7 @@ private fun SettlementCard(
     onExpandToggle: () -> Unit,
     onCopyClick: () -> Unit,
     onShareClick: () -> Unit,
-    onRecordPayment: () -> Unit = {},
+    onMarkPaid: () -> Unit = {},
     currencySymbol: String // Add currency symbol parameter
 ) {
     Card(
@@ -307,9 +288,9 @@ private fun SettlementCard(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         ActionButton(
-                            icon = Icons.Default.Payment,
-                            label = "Record Payment",
-                            onClick = onRecordPayment,
+                            icon = Icons.Default.Check,
+                            label = "Mark Paid",
+                            onClick = onMarkPaid,
                             modifier = Modifier.weight(1f)
                         )
                         ActionButton(
@@ -487,6 +468,7 @@ private fun IndividualBalanceItem(name: String, balance: Double, currencySymbol:
 
 // Helper functions for actions
 private fun copyToClipboard(context: Context, settlement: Settlement, currencySymbol: String) {
+
     val text = "${settlement.from} needs to pay ${settlement.to} $currencySymbol${"%.2f".format(settlement.amount)}"
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     clipboard.setPrimaryClip(ClipData.newPlainText("Settlement", text))
@@ -509,196 +491,4 @@ private fun shareSettlement(context: Context, settlement: Settlement, currencySy
         putExtra(Intent.EXTRA_SUBJECT, "Trip Settlement Reminder")
     }
     context.startActivity(Intent.createChooser(intent, "Share Settlement Reminder"))
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun RecordPaymentDialog(
-    balances: Map<String, Double>,
-    preselectedSettlement: Settlement?,
-    onDismiss: () -> Unit,
-    onConfirm: (String, String, Double) -> Unit,
-    currencySymbol: String // Add currency symbol parameter
-) {
-    // Get the balances from parent
-    var fromParticipant by remember { mutableStateOf(preselectedSettlement?.from ?: "") }
-    var toParticipant by remember { mutableStateOf(preselectedSettlement?.to ?: "") }
-    var paymentAmount by remember { mutableStateOf(preselectedSettlement?.amount?.toString() ?: "") }
-    var expandedFromDropdown by remember { mutableStateOf(false) }
-    var expandedToDropdown by remember { mutableStateOf(false) }
-
-    val amount = paymentAmount.toDoubleOrNull() ?: 0.0
-    val isValid = amount > 0 && fromParticipant.isNotBlank() && toParticipant.isNotBlank() && fromParticipant != toParticipant
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                "Record Payment",
-                fontWeight = FontWeight.Bold
-            )
-        },
-        text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Text(
-                    "Record a payment between participants",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
-
-                // From Participant Dropdown - Only show people who owe money (negative balance)
-                ExposedDropdownMenuBox(
-                    expanded = expandedFromDropdown,
-                    onExpandedChange = { expandedFromDropdown = it }
-                ) {
-                    OutlinedTextField(
-                        value = fromParticipant,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Who is paying?") },
-                        trailingIcon = {
-                            Icon(
-                                imageVector = if (expandedFromDropdown) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
-                                contentDescription = null
-                            )
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor(),
-                        colors = OutlinedTextFieldDefaults.colors()
-                    )
-                    ExposedDropdownMenu(
-                        expanded = expandedFromDropdown,
-                        onDismissRequest = { expandedFromDropdown = false }
-                    ) {
-                        balances.filter { it.value < 0 }.forEach { (name, _) ->
-                            DropdownMenuItem(
-                                text = { Text(name) },
-                                onClick = {
-                                    fromParticipant = name
-                                    expandedFromDropdown = false
-                                    // Reset "to" when "from" changes
-                                    if (toParticipant == name) {
-                                        toParticipant = balances.keys.firstOrNull { it != name } ?: ""
-                                    }
-                                },
-                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                            )
-                        }
-                    }
-                }
-
-                // To Participant Dropdown - Only show people who are owed money (positive balance)
-                ExposedDropdownMenuBox(
-                    expanded = expandedToDropdown,
-                    onExpandedChange = { expandedToDropdown = it }
-                ) {
-                    OutlinedTextField(
-                        value = toParticipant,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Paying to whom?") },
-                        trailingIcon = {
-                            Icon(
-                                imageVector = if (expandedToDropdown) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
-                                contentDescription = null
-                            )
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor(),
-                        colors = OutlinedTextFieldDefaults.colors()
-                    )
-                    ExposedDropdownMenu(
-                        expanded = expandedToDropdown,
-                        onDismissRequest = { expandedToDropdown = false }
-                    ) {
-                        balances.filter { it.value > 0 }.forEach { (name, _) ->
-                            DropdownMenuItem(
-                                text = { Text(name) },
-                                onClick = {
-                                    toParticipant = name
-                                    expandedToDropdown = false
-                                },
-                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                            )
-                        }
-                    }
-                }
-
-                // Amount Input
-                OutlinedTextField(
-                    value = paymentAmount,
-                    onValueChange = { paymentAmount = it },
-                    label = { Text("Payment Amount") },
-                    placeholder = { Text("Enter amount") },
-                    prefix = { Text(currencySymbol) },
-                    singleLine = true,
-                    isError = paymentAmount.isNotBlank() && amount <= 0,
-                    supportingText = {
-                        if (paymentAmount.isNotBlank() && amount <= 0) {
-                            Text(
-                                "Amount must be greater than 0",
-                                color = MaterialTheme.colorScheme.error,
-                                fontSize = 12.sp
-                            )
-                        } else if (fromParticipant == toParticipant && fromParticipant.isNotBlank()) {
-                            Text(
-                                "Cannot pay to the same person",
-                                color = MaterialTheme.colorScheme.error,
-                                fontSize = 12.sp
-                            )
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                // Summary Card
-                if (isValid) {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text(
-                                    "$fromParticipant pays $toParticipant",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                            Text(
-                                "$currencySymbol${"%.2f".format(amount)}", // Use currency symbol
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = { onConfirm(fromParticipant, toParticipant, amount) },
-                enabled = isValid
-            ) {
-                Text("Record Payment")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
 }
