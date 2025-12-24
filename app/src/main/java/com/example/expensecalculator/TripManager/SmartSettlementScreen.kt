@@ -1,5 +1,6 @@
 package com.example.expensecalculator.TripManager
 
+import android.R.color.white
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -25,6 +26,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -172,9 +174,9 @@ private fun SettlementHeaderCard(
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
             containerColor = if (isAllSettled)
-                MaterialTheme.colorScheme.primaryContainer
+                Color.White
             else
-                MaterialTheme.colorScheme.tertiaryContainer
+                Color.White
         )
     ) {
         Row(
@@ -190,7 +192,7 @@ private fun SettlementHeaderCard(
                 )
                 Text(
                     text = if (isAllSettled)
-                        "Everyone is squared up"
+                        "No Payments Needed"
                     else
                         "$totalSettlements payment${if (totalSettlements > 1) "s" else ""} needed",
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),

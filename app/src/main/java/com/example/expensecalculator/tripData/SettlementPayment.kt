@@ -4,9 +4,6 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 
-/**
- * Entity for tracking settlement payments between participants
- */
 @Entity(
     tableName = "settlement_payments",
     foreignKeys = [
