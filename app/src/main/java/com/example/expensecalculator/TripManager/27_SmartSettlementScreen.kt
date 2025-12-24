@@ -1,6 +1,5 @@
 package com.example.expensecalculator.TripManager
 
-import android.R.color.white
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context

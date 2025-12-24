@@ -336,12 +336,18 @@ fun TripDetailScreen(
                         val currencySymbol = completeTripDetails?.trip?.currency?.let {
                             com.example.expensecalculator.util.CurrencyCode.fromCode(it).symbol
                         } ?: "₹"
-                        SmartSettlementContent(
+                        val settlementPayments by viewModel.settlementPayments.collectAsState()
+
+                        BalancesWithHistoryScreen(
                             balances = adjustedBalances,
                             settlements = optimizedSettlements,
+                            settlementPayments = settlementPayments,
                             currencySymbol = currencySymbol,
                             onRecordPayment = { from, to, amount ->
                                 viewModel.addSettlementPayment(from, to, amount)
+                            },
+                            onDeletePayment = { payment ->
+                                viewModel.deleteSettlementPayment(payment)
                             }
                         )
                     }
