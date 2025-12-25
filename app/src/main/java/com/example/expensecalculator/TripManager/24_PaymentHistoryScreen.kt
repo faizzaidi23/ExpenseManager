@@ -233,7 +233,7 @@ private fun PaymentHistoryCard(
                 enter = expandVertically() + fadeIn(),
                 exit = shrinkVertically() + fadeOut()
             ) {
-                Column(modifier = Modifier.padding(top = 12.dp)) {
+                Column(modifier = Modifier.padding(top = 14.dp)) {
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 8.dp),
                         color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
@@ -256,7 +256,7 @@ private fun PaymentHistoryCard(
                             containerColor = MaterialTheme.colorScheme.errorContainer,
                             contentColor = MaterialTheme.colorScheme.onErrorContainer
                         ),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(9.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
