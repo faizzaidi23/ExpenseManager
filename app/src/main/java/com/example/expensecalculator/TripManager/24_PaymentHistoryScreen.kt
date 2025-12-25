@@ -205,7 +205,7 @@ private fun PaymentHistoryCard(
                     val dateTimeText = formatPaymentDateTime(payment.timestamp)
                     Text(
                         text = dateTimeText,
-                        fontSize = 12.sp,
+                        fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )
                 }
