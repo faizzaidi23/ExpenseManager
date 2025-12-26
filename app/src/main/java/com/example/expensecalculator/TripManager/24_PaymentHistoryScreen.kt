@@ -263,7 +263,7 @@ private fun PaymentHistoryCard(
                             contentDescription = "Delete",
                             modifier = Modifier.size(20.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(7.dp))
                         Text("Delete Payment Record")
                     }
                 }
