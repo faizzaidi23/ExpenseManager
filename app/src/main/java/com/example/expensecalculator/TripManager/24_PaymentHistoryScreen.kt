@@ -382,10 +382,10 @@ private fun formatPaymentDateTime(timestamp: Long): String {
     val diff = now - timestamp
 
     return when {
-        diff < 60000 -> "Just now" // Less than 1 minute
-        diff < 3600000 -> "${diff / 60000} min ago" // Less than 1 hour
-        diff < 86400000 -> "${diff / 3600000} hours ago" // Less than 24 hours
-        diff < 172800000 -> "Yesterday" // Less than 2 days
+        diff < 60000 -> "Just now"
+        diff < 3600000 -> "${diff / 60000} min ago"
+        diff < 86400000 -> "${diff / 3600000} hours ago"
+        diff < 172800000 -> "Yesterday"
         else -> {
             // Format as date and time
             val sdf = SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a", Locale.getDefault())
