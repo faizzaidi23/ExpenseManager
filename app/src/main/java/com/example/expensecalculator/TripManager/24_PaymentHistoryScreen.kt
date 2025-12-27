@@ -277,7 +277,7 @@ private fun PaymentDetailRow(label: String, value: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 5.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
@@ -288,7 +288,7 @@ private fun PaymentDetailRow(label: String, value: String) {
         )
         Text(
             text = value,
-            fontSize = 14.sp,
+            fontSize = 15.sp,
             color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.SemiBold
         )
@@ -309,7 +309,7 @@ private fun PaymentHistorySummaryCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(13.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
