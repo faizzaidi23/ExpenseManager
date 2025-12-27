@@ -246,7 +246,7 @@ private fun PaymentHistoryCard(
                     PaymentDetailRow(label = "Date", value = payment.date)
                     PaymentDetailRow(label = "Time", value = formatTime(payment.timestamp))
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(7.dp))
 
                     // Delete Button
                     Button(
@@ -261,7 +261,7 @@ private fun PaymentHistoryCard(
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Delete",
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(21.dp)
                         )
                         Spacer(modifier = Modifier.width(7.dp))
                         Text("Delete Payment Record")
