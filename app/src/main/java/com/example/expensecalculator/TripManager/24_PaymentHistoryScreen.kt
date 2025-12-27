@@ -154,12 +154,12 @@ private fun PaymentHistoryCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Main Payment Info
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Payment Icon
+
                 Box(
                     modifier = Modifier
                         .size(40.dp)
@@ -201,7 +201,7 @@ private fun PaymentHistoryCard(
                         )
                     }
 
-                    // Date and Time
+
                     val dateTimeText = formatPaymentDateTime(payment.timestamp)
                     Text(
                         text = dateTimeText,
