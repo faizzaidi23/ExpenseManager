@@ -154,7 +154,10 @@ fun LoginScreen(
                     Button(
                         onClick = {
                             val client = viewModel.getGoogleSignInClient(context)
-                            googleLauncher.launch(client.signInIntent)
+                            // Force account picker every time by signing out first
+                            client.signOut().addOnCompleteListener {
+                                googleLauncher.launch(client.signInIntent)
+                            }
                         },
                         modifier = Modifier.fillMaxWidth().height(50.dp),
                         shape = RoundedCornerShape(12.dp),

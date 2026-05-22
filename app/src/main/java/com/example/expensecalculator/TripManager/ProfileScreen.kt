@@ -70,7 +70,7 @@ fun ProfileScreen(
                         onLogout()
                     },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Black,
+                        containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = Color.White
                     ),
                     shape = MaterialTheme.shapes.small
@@ -80,8 +80,9 @@ fun ProfileScreen(
                 OutlinedButton(
                     onClick = { showLogoutDialog = false },
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = Color.Black
+                        contentColor = MaterialTheme.colorScheme.primary
                     ),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
                     shape = MaterialTheme.shapes.small
                 ) { Text("Cancel") }
             }
@@ -264,10 +265,10 @@ fun ProfileScreen(
                         },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = Color.White,
-                            checkedTrackColor = Color.Black,
-                            uncheckedThumbColor = Color.Black,
+                            checkedTrackColor = MaterialTheme.colorScheme.primary,
+                            uncheckedThumbColor = MaterialTheme.colorScheme.primary,
                             uncheckedTrackColor = Color.White,
-                            uncheckedBorderColor = Color.Black
+                            uncheckedBorderColor = MaterialTheme.colorScheme.primary
                         )
                     )
                 }
@@ -301,9 +302,9 @@ fun ProfileScreen(
                     .fillMaxWidth()
                     .height(50.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color.Black
+                    contentColor = MaterialTheme.colorScheme.primary
                 ),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.Black),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
                 shape = MaterialTheme.shapes.small
             ) {
                 Icon(Icons.Default.DeleteForever, contentDescription = null)

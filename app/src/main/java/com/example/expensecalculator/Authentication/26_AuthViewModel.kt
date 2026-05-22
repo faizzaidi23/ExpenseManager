@@ -95,14 +95,12 @@ class AuthViewModel : ViewModel() {
                 val result = auth.signInWithCredential(credential).await()
                 val user = result.user ?: return@launch
 
-                // Save profile only if new user
-                if (result.additionalUserInfo?.isNewUser == true) {
-                    saveUserProfile(
-                        uid = user.uid,
-                        name = user.displayName ?: "User",
-                        email = user.email ?: ""
-                    )
-                }
+                // Save/update profile for ALL Google sign-ins, not just new users
+                saveUserProfile(
+                    uid = user.uid,
+                    name = user.displayName ?: "User",
+                    email = user.email ?: ""
+                )
                 onSuccess()
             } catch (e: Exception) {
                 onError("Google sign-in failed: ${e.message}")

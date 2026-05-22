@@ -3,6 +3,7 @@ package com.example.expensecalculator.firestore
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.FieldValue
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -204,34 +205,23 @@ class FirestoreTripRepository {
     }
 
     suspend fun acceptInvite(invite: FirestoreInvite) {
+        val batch = db.batch()
+
         // 1. Update invite status
-        db.collection("trip_invites").document(invite.id)
-            .update("status", "accepted").await()
+        val inviteRef = db.collection("trip_invites").document(invite.id)
+        batch.update(inviteRef, "status", "accepted")
 
-        // 2. Get current trip data and verify it exists
-        val tripDoc = db.collection("trips").document(invite.tripId).get().await()
+        // 2. Update trip — use FieldValue.arrayUnion to avoid reading first
+        val tripRef = db.collection("trips").document(invite.tripId)
+        val newParticipant = mapOf(
+            "uid" to uid,
+            "name" to (currentUser?.displayName ?: invite.toName),
+            "email" to (currentUser?.email ?: invite.toEmail)
+        )
+        batch.update(tripRef, "participantUids", FieldValue.arrayUnion(uid))
+        batch.update(tripRef, "participants", FieldValue.arrayUnion(newParticipant))
 
-        if (!tripDoc.exists()) {
-            throw Exception("Trip not found")
-        }
-
-        val currentParticipants = tripDoc.get("participants") as? List<Map<String, Any>> ?: emptyList()
-        val currentUids = tripDoc.get("participantUids") as? List<String> ?: emptyList()
-
-        // 3. Only add if not already there
-        if (!currentUids.contains(uid)) {
-            val newParticipant = mapOf(
-                "uid" to uid,
-                "name" to (currentUser?.displayName ?: invite.toName),
-                "email" to (currentUser?.email ?: invite.toEmail)
-            )
-            db.collection("trips").document(invite.tripId).update(
-                mapOf(
-                    "participants" to currentParticipants + newParticipant,
-                    "participantUids" to currentUids + uid
-                )
-            ).await()
-        }
+        batch.commit().await()
     }
 
     suspend fun declineInvite(invite: FirestoreInvite) {

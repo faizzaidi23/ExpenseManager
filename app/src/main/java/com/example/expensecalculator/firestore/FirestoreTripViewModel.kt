@@ -47,30 +47,25 @@ class FirestoreTripViewModel : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    // ─── BALANCES (computed from expenses) ───────────────────────────────────
-
-    val balances: StateFlow<Map<String, Double>>
-        get() {
-            val result = mutableMapOf<String, Double>()
-            _currentTrip.value?.participants?.forEach {
-                result[it.name] = 0.0
-            }
-            _expenses.value.forEach { expense ->
-                result[expense.paidByName] =
-                    (result[expense.paidByName] ?: 0.0) + expense.amount
-                expense.splits.forEach { split ->
-                    result[split.name] =
-                        (result[split.name] ?: 0.0) - split.shareAmount
-                }
-            }
-            return MutableStateFlow(result)
-        }
-
     // ─── INIT ─────────────────────────────────────────────────────────────────
 
     init {
-        loadMyTrips()
-        loadMyPendingInvites()
+        val auth = FirebaseAuth.getInstance()
+
+        // Listen for auth state changes instead of calling once in init
+        auth.addAuthStateListener { firebaseAuth ->
+            val currentUid = firebaseAuth.currentUser?.uid
+            if (currentUid != null) {
+                loadMyTrips()
+                loadMyPendingInvites()
+            } else {
+                // User logged out - clear data immediately
+                _trips.value = emptyList()
+                _pendingInvites.value = emptyList()
+                _currentTrip.value = null
+                _expenses.value = emptyList()
+            }
+        }
     }
 
     // ─── TRIP OPERATIONS ─────────────────────────────────────────────────────

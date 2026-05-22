@@ -69,7 +69,10 @@ class MainActivity : ComponentActivity() {
                         key = currentUserId
                     )
 
-                    val firestoreTripViewModel: FirestoreTripViewModel = viewModel()
+                    // ADD KEY HERE so it recreates when user changes
+                    val firestoreTripViewModel: FirestoreTripViewModel = viewModel(
+                        key = currentUserId
+                    )
 
                     val navController = rememberNavController()
                     NavGraph(

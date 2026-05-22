@@ -58,8 +58,8 @@ fun MainScaffold(
     Scaffold(
         bottomBar = {
             NavigationBar(
-                containerColor = Color.White,
-                contentColor = Color.Black
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface
             ) {
                 bottomNavItems.forEachIndexed { index, item ->
                     val isSelected = selectedTab == index
@@ -90,29 +90,29 @@ fun MainScaffold(
                                     Icon(
                                         imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
                                         contentDescription = item.label,
-                                        tint = if (isSelected) Color.Black else Color.Gray
+                                        tint = if (isSelected) MaterialTheme.colorScheme.primary else Color(0xFFA3A3A3)
                                     )
                                 }
                             } else {
                                 Icon(
                                     imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
                                     contentDescription = item.label,
-                                    tint = if (isSelected) Color.Black else Color.Gray
+                                    tint = if (isSelected) MaterialTheme.colorScheme.primary else Color(0xFFA3A3A3)
                                 )
                             }
                         },
                         label = {
                             Text(
                                 text = item.label,
-                                color = if (isSelected) Color.Black else Color.Gray
+                                color = if (isSelected) MaterialTheme.colorScheme.primary else Color(0xFFA3A3A3)
                             )
                         },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = Color.Black,
-                            selectedTextColor = Color.Black,
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
                             indicatorColor = Color.Transparent,
-                            unselectedIconColor = Color.Gray,
-                            unselectedTextColor = Color.Gray
+                            unselectedIconColor = Color(0xFFA3A3A3),
+                            unselectedTextColor = Color(0xFFA3A3A3)
                         )
                     )
                 }
