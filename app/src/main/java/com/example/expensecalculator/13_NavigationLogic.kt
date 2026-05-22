@@ -1,96 +1,123 @@
 package com.example.expensecalculator
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.padding
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.example.expensecalculator.Authentication.AuthViewModel
 import com.example.expensecalculator.TripManager.AddTripScreen
 import com.example.expensecalculator.TripManager.FirstScreen
-import com.example.expensecalculator.TripManager.TripDetailScreen
-import com.example.expensecalculator.TripManager.TripExpenseDetailScreen
-import com.example.expensecalculator.TripManager.TripMainScreen
+import com.example.expensecalculator.TripManager.InviteParticipantsScreen
+import com.example.expensecalculator.TripManager.NewAddTripScreen
+import com.example.expensecalculator.TripManager.NewTripDetailScreen
+import com.example.expensecalculator.TripManager.NewTripMainScreen
+import com.example.expensecalculator.TripManager.NewNotificationsScreen
+import com.example.expensecalculator.TripManager.ProfileScreen
 import com.example.expensecalculator.TripManager.TripViewModel
+import com.example.expensecalculator.firestore.FirestoreTripViewModel
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun NavGraph(
     navController: NavHostController,
-    expenseViewModel: ExpenseViewModel, // Renamed for clarity
+    expenseViewModel: ExpenseViewModel,
     tripViewModel: TripViewModel,
+    firestoreTripViewModel: FirestoreTripViewModel,
     themePreferences: ThemePreferences
-){
-    NavHost(navController = navController, startDestination = "trip_main"){
+) {
+    val authViewModel: AuthViewModel = viewModel()
 
-        // First screen - kept but not in navigation flow
-        composable("first_screen"){
-            FirstScreen(navController = navController)
-        }
+    MainScaffold(
+        navController = navController,
+        firestoreTripViewModel = firestoreTripViewModel,
+        themePreferences = themePreferences
+    ) { paddingValues ->
+        NavHost(
+            navController = navController,
+            startDestination = "trip_main",
+            modifier = Modifier.padding(paddingValues)
+        ) {
 
-        // Main screen - kept but not in navigation flow
-        composable("main_screen"){ // Renamed from detail_screen
-            MainScreen(navController = navController, viewModel = expenseViewModel)
-        }
-
-        composable("trip_main"){ // Renamed from trip_details
-            TripMainScreen(navController = navController, viewModel = tripViewModel, themePreferences = themePreferences)
-        }
-
-        // --- UPDATED: Combined Add/Edit Trip Route ---
-        // Uses an optional argument. If tripId is not passed, it defaults to -1 (Add Mode)
-        composable(
-            route = "add_trip?tripId={tripId}",
-            arguments = listOf(navArgument("tripId") {
-                type = NavType.IntType
-                defaultValue = -1 // Default value for adding a new trip
-            })
-        ) { backStackEntry ->
-            val tripId = backStackEntry.arguments?.getInt("tripId")
-            AddTripScreen(
-                navController = navController,
-                viewModel = tripViewModel,
-                tripId = if (tripId == -1) null else tripId // Pass null for Add Mode
-            )
-        }
-
-        // --- REMOVED: The old edit_trip route is no longer needed ---
-
-        composable(
-            "trip_detail/{tripId}",
-            arguments = listOf(navArgument("tripId") { type = NavType.IntType })
-        ) { backStackEntry ->
-            val id = backStackEntry.arguments?.getInt("tripId")
-            if (id != null) {
-                TripDetailScreen(navController = navController, viewModel = tripViewModel, tripId = id)
+            // ── MAIN TRIPS LIST (Firestore) ───────────────────────────────
+            composable("trip_main") {
+                NewTripMainScreen(
+                    navController = navController,
+                    viewModel = firestoreTripViewModel,
+                    themePreferences = themePreferences
+                )
             }
-        }
 
-        // --- NEW: Trip Expense Detail Route ---
-        composable(
-            route = "trip_expense_detail/{expenseId}",
-            arguments = listOf(navArgument("expenseId") { type = NavType.IntType })
-        ) { backStackEntry ->
-            val expenseId = backStackEntry.arguments?.getInt("expenseId")
-            if (expenseId != null) {
-                val expenseWithSplits by tripViewModel.getExpenseWithSplitsById(expenseId).collectAsState(initial = null)
-                expenseWithSplits?.let { expWithSplits ->
-                    TripExpenseDetailScreen(
-                        navController = navController,
-                        viewModel = tripViewModel,
-                        expenseWithSplits = expWithSplits
-                    )
-                }
+            // ── ADD TRIP (Firestore) ──────────────────────────────────────
+            composable("new_add_trip") {
+                NewAddTripScreen(
+                    navController = navController,
+                    viewModel = firestoreTripViewModel
+                )
             }
-        }
 
-        composable(
-            route = "expense_screen/{accountId}", // Renamed from detailId
-            arguments = listOf(navArgument("accountId") { type = NavType.IntType })
-        ) { backStackEntry ->
-            val id = backStackEntry.arguments?.getInt("accountId")
-            if (id != null) {
+            // ── TRIP DETAIL (Firestore) ───────────────────────────────────
+            composable(
+                route = "new_trip_detail/{tripId}",
+                arguments = listOf(navArgument("tripId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val tripId = backStackEntry.arguments?.getString("tripId") ?: return@composable
+                NewTripDetailScreen(
+                    navController = navController,
+                    viewModel = firestoreTripViewModel,
+                    tripId = tripId
+                )
+            }
+
+            // ── INVITE PARTICIPANTS ───────────────────────────────────────
+            composable(
+                route = "invite_participants/{tripId}",
+                arguments = listOf(navArgument("tripId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val tripId = backStackEntry.arguments?.getString("tripId") ?: return@composable
+                InviteParticipantsScreen(
+                    navController = navController,
+                    viewModel = firestoreTripViewModel,
+                    tripId = tripId
+                )
+            }
+
+            // ── OLD ROOM SCREENS (keep for account manager) ───────────────
+            composable("first_screen") {
+                FirstScreen(navController = navController)
+            }
+
+            composable("main_screen") {
+                MainScreen(
+                    navController = navController,
+                    viewModel = expenseViewModel
+                )
+            }
+
+            composable(
+                route = "add_trip?tripId={tripId}",
+                arguments = listOf(navArgument("tripId") {
+                    type = NavType.IntType
+                    defaultValue = -1
+                })
+            ) { backStackEntry ->
+                val tripId = backStackEntry.arguments?.getInt("tripId")
+                AddTripScreen(
+                    navController = navController,
+                    viewModel = tripViewModel,
+                    tripId = if (tripId == -1) null else tripId
+                )
+            }
+
+            composable(
+                route = "expense_screen/{accountId}",
+                arguments = listOf(navArgument("accountId") { type = NavType.IntType })
+            ) { backStackEntry ->
+                val id = backStackEntry.arguments?.getInt("accountId") ?: return@composable
                 ExpenseScreen(
                     viewModel = expenseViewModel,
                     accountId = id,
@@ -100,29 +127,43 @@ fun NavGraph(
                     }
                 )
             }
-        }
 
-        composable(
-            route = "expense_detail/{expenseId}",
-            arguments = listOf(navArgument("expenseId") { type = NavType.IntType })
-        ) { backStackEntry ->
-            val expenseId = backStackEntry.arguments?.getInt("expenseId")
-            if (expenseId != null) {
+            composable(
+                route = "expense_detail/{expenseId}",
+                arguments = listOf(navArgument("expenseId") { type = NavType.IntType })
+            ) { backStackEntry ->
+                val expenseId = backStackEntry.arguments?.getInt("expenseId") ?: return@composable
                 val expense by expenseViewModel.getExpenseById(expenseId).collectAsState(initial = null)
                 expense?.let { exp ->
                     ExpenseDetailScreen(
                         expense = exp,
                         onNavigateBack = { navController.popBackStack() },
-                        onEdit = {
-                            navController.popBackStack()
-                            // The edit dialog will be shown in the expense screen
-                        },
+                        onEdit = { navController.popBackStack() },
                         onDelete = {
                             expenseViewModel.deleteExpense(exp)
                             navController.popBackStack()
                         }
                     )
                 }
+            }
+
+            // ── NOTIFICATIONS (Firestore) ─────────────────────────────────
+            composable("notifications") {
+                NewNotificationsScreen(
+                    viewModel = firestoreTripViewModel
+                )
+            }
+
+            // ── PROFILE ───────────────────────────────────────────────────
+            composable("profile") {
+                ProfileScreen(
+                    themePreferences = themePreferences,
+                    authViewModel = authViewModel,
+                    onLogout = {
+                        com.example.expensecalculator.Data.ExpenseDatabase.clearInstance()
+                        FirebaseAuth.getInstance().signOut()
+                    }
+                )
             }
         }
     }

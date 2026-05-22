@@ -113,4 +113,7 @@ dependencies {
 
 // Google Sign-In
     implementation("com.google.android.gms:play-services-auth:20.7.0")
+
+    //fcm setup + save token
+    implementation("com.google.firebase:firebase-messaging-ktx")
 }

@@ -14,9 +14,10 @@ import com.example.expensecalculator.ExpenseViewModel
 import com.example.expensecalculator.ExpenseViewModelFactory
 import com.example.expensecalculator.NavGraph
 import com.example.expensecalculator.ThemePreferences
-import com.example.expensecalculator.TripManager.TripRepository
 import com.example.expensecalculator.TripManager.TripViewModel
 import com.example.expensecalculator.TripManager.TripViewModelFactory
+import com.example.expensecalculator.TripManager.TripRepository
+import com.example.expensecalculator.firestore.FirestoreTripViewModel
 import com.example.expensecalculator.ui.theme.ExpenseCalculatorTheme
 import com.google.firebase.auth.FirebaseAuth
 
@@ -52,7 +53,9 @@ class MainActivity : ComponentActivity() {
                         ExpenseDatabase.getDatabase(this@MainActivity, currentUserId!!)
                     }
                     val expenseViewModelFactory = remember(currentUserId) {
-                        ExpenseViewModelFactory(ExpenseRepository(db.accountDao(), db.expenseDao()))
+                        ExpenseViewModelFactory(
+                            ExpenseRepository(db.accountDao(), db.expenseDao())
+                        )
                     }
                     val tripViewModelFactory = remember(currentUserId) {
                         TripViewModelFactory(TripRepository(db.tripDao()), this@MainActivity)
@@ -65,11 +68,15 @@ class MainActivity : ComponentActivity() {
                         factory = tripViewModelFactory,
                         key = currentUserId
                     )
+
+                    val firestoreTripViewModel: FirestoreTripViewModel = viewModel()
+
                     val navController = rememberNavController()
                     NavGraph(
                         navController = navController,
                         expenseViewModel = expenseViewModel,
                         tripViewModel = tripViewModel,
+                        firestoreTripViewModel = firestoreTripViewModel,
                         themePreferences = themePreferences
                     )
                 } else {
