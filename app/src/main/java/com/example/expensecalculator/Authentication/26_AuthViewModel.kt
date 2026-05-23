@@ -96,9 +96,14 @@ class AuthViewModel : ViewModel() {
                 val user = result.user ?: return@launch
 
                 // Save/update profile for ALL Google sign-ins, not just new users
+                // Use better name fallback: email prefix if display name is empty
+                val displayName = user.displayName?.takeIf { it.isNotBlank() }
+                    ?: user.email?.substringBefore("@")
+                    ?: "User"
+
                 saveUserProfile(
                     uid = user.uid,
-                    name = user.displayName ?: "User",
+                    name = displayName,
                     email = user.email ?: ""
                 )
                 onSuccess()
@@ -131,7 +136,8 @@ class AuthViewModel : ViewModel() {
             "email" to email,
             "nameLower" to name.lowercase()
         )
-        db.collection("users").document(uid).set(user).await()
+        // Use SetOptions.merge() to preserve existing data and only update these fields
+        db.collection("users").document(uid).set(user, com.google.firebase.firestore.SetOptions.merge()).await()
     }
 
 

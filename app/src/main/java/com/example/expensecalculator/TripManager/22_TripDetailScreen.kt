@@ -325,8 +325,12 @@ fun TripDetailScreen(
                         CategoriesContent(
                             categoriesWithExpenses = categoriesWithExpenses,
                             currencySymbol = currencySymbol,
-                            onAddCategory = { categoryName -> viewModel.addCategory(categoryName) },
-                            onDeleteCategory = { category -> viewModel.deleteCategory(category) },
+                            onAddCategory = { categoryName ->
+                                viewModel.addCategory(categoryName)
+                            },
+                            onDeleteCategory = { category ->
+                                viewModel.deleteCategory(category)
+                            },
                             onExpenseClick = { expenseId ->
                                 navController.navigate("trip_expense_detail/$expenseId")
                             }
@@ -560,7 +564,7 @@ fun BalanceItem(name: String, balance: Double) {
 }
 
 @Composable
-private fun TripDetailEmptyState(icon: ImageVector, title: String, subtitle: String) {
+fun TripDetailEmptyState(icon: ImageVector, title: String, subtitle: String) {
     Box(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         contentAlignment = Alignment.Center

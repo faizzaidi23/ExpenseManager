@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
@@ -20,6 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.expensecalculator.firestore.FirestoreCategory
 import com.example.expensecalculator.firestore.FirestoreExpense
 import com.example.expensecalculator.firestore.FirestoreParticipant
 import com.example.expensecalculator.firestore.FirestoreTripViewModel
@@ -40,18 +42,19 @@ fun NewTripDetailScreen(
     val currentTrip by viewModel.currentTrip.collectAsState()
     val expenses by viewModel.expenses.collectAsState()
     val uid = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+    val isCreator = currentTrip?.createdBy == uid
 
     var selectedTabIndex by remember { mutableStateOf(0) }
     var showAddExpenseDialog by remember { mutableStateOf(false) }
+    var showAddCategoryDialog by remember { mutableStateOf(false) }
     var showDeleteTripDialog by remember { mutableStateOf(false) }
     var menuExpanded by remember { mutableStateOf(false) }
+    var showEditExpenseDialog by remember { mutableStateOf(false) }
+    var selectedExpenseForEdit by remember { mutableStateOf<FirestoreExpense?>(null) }
 
     LaunchedEffect(tripId) {
         viewModel.setCurrentTrip(tripId)
-    }
-
-    DisposableEffect(Unit) {
-        onDispose { viewModel.clearCurrentTrip() }
+        viewModel.loadCategories(tripId)
     }
 
     // Compute balances from expenses
@@ -111,17 +114,19 @@ fun NewTripDetailScreen(
                             expanded = menuExpanded,
                             onDismissRequest = { menuExpanded = false }
                         ) {
-                            DropdownMenuItem(
-                                text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
-                                onClick = {
-                                    menuExpanded = false
-                                    showDeleteTripDialog = true
-                                },
-                                leadingIcon = {
-                                    Icon(Icons.Default.Delete, "Delete",
-                                        tint = MaterialTheme.colorScheme.error)
-                                }
-                            )
+                            if (isCreator) {
+                                DropdownMenuItem(
+                                    text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                                    onClick = {
+                                        menuExpanded = false
+                                        showDeleteTripDialog = true
+                                    },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.Delete, "Delete",
+                                            tint = MaterialTheme.colorScheme.error)
+                                    }
+                                )
+                            }
                         }
                     }
                 },
@@ -131,13 +136,18 @@ fun NewTripDetailScreen(
             )
         },
         floatingActionButton = {
-            if (selectedTabIndex == 0) {
+            if (selectedTabIndex == 0 || selectedTabIndex == 3) {
                 FloatingActionButton(
-                    onClick = { showAddExpenseDialog = true },
+                    onClick = {
+                        when (selectedTabIndex) {
+                            0 -> showAddExpenseDialog = true
+                            3 -> showAddCategoryDialog = true
+                        }
+                    },
                     containerColor = MaterialTheme.colorScheme.primary,
                     shape = CircleShape
                 ) {
-                    Icon(Icons.Default.Add, "Add Expense", tint = Color.White)
+                    Icon(Icons.Default.Add, "Add", tint = Color.White)
                 }
             }
         },
@@ -195,7 +205,7 @@ fun NewTripDetailScreen(
                     )
                 }
             ) {
-                listOf("Expenses", "Balances", "People").forEachIndexed { index, title ->
+                listOf("Expenses", "Balances", "People", "Categories").forEachIndexed { index, title ->
                     Tab(
                         selected = selectedTabIndex == index,
                         onClick = { selectedTabIndex = index },
@@ -211,8 +221,16 @@ fun NewTripDetailScreen(
                     expenses = expenses,
                     currencySymbol = currencySymbol,
                     currentUid = uid,
+                    tripId = tripId,
+                    viewModel = viewModel,
+                    participants = currentTrip?.participants ?: emptyList(),
+                    categories = viewModel.categories.collectAsState().value,
                     onDeleteExpense = { expense ->
-                        viewModel.deleteExpense(tripId, expense.id)
+                        viewModel.deleteExpense(tripId, expense.id, expense.expenseName)
+                    },
+                    onEditExpense = { expense ->
+                        selectedExpenseForEdit = expense
+                        showEditExpenseDialog = true
                     }
                 )
                 1 -> NewBalancesTab(
@@ -224,6 +242,13 @@ fun NewTripDetailScreen(
                     participants = currentTrip?.participants ?: emptyList(),
                     currentUid = uid
                 )
+                3 -> CategoriesTab(
+                    tripId = tripId,
+                    expenses = expenses,
+                    currencySymbol = currencySymbol,
+                    viewModel = viewModel,
+                    navController = navController
+                )
             }
         }
     }
@@ -231,18 +256,21 @@ fun NewTripDetailScreen(
     // Add Expense Dialog
     if (showAddExpenseDialog) {
         val participants = currentTrip?.participants ?: emptyList()
+        val categories = viewModel.categories.collectAsState().value
         NewAddExpenseDialog(
             participants = participants,
+            categories = categories,
             currencySymbol = currencySymbol,
             onDismiss = { showAddExpenseDialog = false },
-            onAdd = { expenseName, amount, paidBy, splitAmong ->
+            onAdd = { expenseName, amount, paidBy, splitAmong, categoryName ->
                 viewModel.addExpense(
                     tripId = tripId,
                     expenseName = expenseName,
                     amount = amount,
                     paidByUid = paidBy.uid,
                     paidByName = paidBy.name,
-                    participantsInSplit = splitAmong
+                    participantsInSplit = splitAmong,
+                    categoryName = categoryName
                 )
                 showAddExpenseDialog = false
             }
@@ -273,6 +301,43 @@ fun NewTripDetailScreen(
             }
         )
     }
+
+    // Add Category Dialog
+    if (showAddCategoryDialog) {
+        CategoryPickerDialog(
+            onDismiss = { showAddCategoryDialog = false },
+            onCategorySelected = { categoryName ->
+                val iconName = PredefinedCategories.categories
+                    .find { it.name.equals(categoryName, ignoreCase = true) }?.name ?: "Other"
+                viewModel.addCategory(tripId, categoryName, iconName)
+                showAddCategoryDialog = false
+            }
+        )
+    }
+
+    // Edit Expense Dialog
+    if (showEditExpenseDialog && selectedExpenseForEdit != null) {
+        EditFirestoreExpenseDialog(
+            expense = selectedExpenseForEdit!!,
+            participants = currentTrip?.participants ?: emptyList(),
+            categories = viewModel.categories.collectAsState().value,
+            currencySymbol = currencySymbol,
+            onDismiss = { showEditExpenseDialog = false },
+            onSave = { updatedName, updatedAmount, updatedPaidBy, updatedSplit, updatedCategory ->
+                viewModel.deleteExpense(tripId, selectedExpenseForEdit!!.id)
+                viewModel.addExpense(
+                    tripId = tripId,
+                    expenseName = updatedName,
+                    amount = updatedAmount,
+                    paidByUid = updatedPaidBy.uid,
+                    paidByName = updatedPaidBy.name,
+                    participantsInSplit = updatedSplit,
+                    categoryName = updatedCategory
+                )
+                showEditExpenseDialog = false
+            }
+        )
+    }
 }
 
 // ─── EXPENSES TAB ─────────────────────────────────────────────────────────────
@@ -282,7 +347,12 @@ private fun NewExpensesTab(
     expenses: List<FirestoreExpense>,
     currencySymbol: String,
     currentUid: String,
-    onDeleteExpense: (FirestoreExpense) -> Unit
+    tripId: String,
+    viewModel: FirestoreTripViewModel,
+    participants: List<FirestoreParticipant>,
+    categories: List<FirestoreCategory>,
+    onDeleteExpense: (FirestoreExpense) -> Unit,
+    onEditExpense: (FirestoreExpense) -> Unit
 ) {
     if (expenses.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -320,8 +390,8 @@ private fun NewExpensesTab(
                 NewExpenseCard(
                     expense = expense,
                     currencySymbol = currencySymbol,
-                    canDelete = expense.paidByUid == currentUid,
-                    onDelete = { onDeleteExpense(expense) }
+                    onDelete = { onDeleteExpense(expense) },
+                    onEdit = { onEditExpense(expense) }
                 )
             }
         }
@@ -332,8 +402,8 @@ private fun NewExpensesTab(
 private fun NewExpenseCard(
     expense: FirestoreExpense,
     currencySymbol: String,
-    canDelete: Boolean,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEdit: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -342,7 +412,9 @@ private fun NewExpenseCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(14.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -351,6 +423,11 @@ private fun NewExpenseCard(
                 Text("Paid by: ${expense.paidByName}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                if (!expense.categoryName.isNullOrEmpty()) {
+                    Text("Category: ${expense.categoryName}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary)
+                }
                 if (expense.date.isNotEmpty()) {
                     Text(expense.date,
                         style = MaterialTheme.typography.bodySmall,
@@ -362,17 +439,19 @@ private fun NewExpenseCard(
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
             )
-            if (canDelete) {
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.DeleteOutline, "Delete",
-                        tint = MaterialTheme.colorScheme.primary)
-                }
+            IconButton(onClick = onEdit) {
+                Icon(Icons.Default.Edit, "Edit",
+                    tint = MaterialTheme.colorScheme.primary)
+            }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.DeleteOutline, "Delete",
+                    tint = MaterialTheme.colorScheme.error)
             }
         }
     }
 }
 
-// ─── BALANCES TAB ─────────────────────────────────────────────────────────────
+// ─── BALANCES TAB ────────────────────────────────────────────���────────────────
 
 @Composable
 private fun NewBalancesTab(
@@ -434,7 +513,7 @@ private fun NewBalancesTab(
                     ) {
                         Text(settlement.from, fontWeight = FontWeight.Medium,
                             modifier = Modifier.weight(1f))
-                        Icon(Icons.Default.ArrowForward, null,
+                        Icon(Icons.AutoMirrored.Filled.ArrowForward, null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(18.dp))
                         Text(settlement.to, fontWeight = FontWeight.Medium,
@@ -455,7 +534,7 @@ private fun NewBalancesTab(
     }
 }
 
-// ─── PEOPLE TAB ───────────────────────────────────────────────────────────────
+// ─── PEOPLE TAB ──────────────────────���────────────────────────────────────────
 
 @Composable
 private fun PeopleTab(
@@ -517,15 +596,18 @@ private fun PeopleTab(
 @Composable
 fun NewAddExpenseDialog(
     participants: List<FirestoreParticipant>,
+    categories: List<FirestoreCategory>,
     currencySymbol: String,
     onDismiss: () -> Unit,
-    onAdd: (String, Double, FirestoreParticipant, List<FirestoreParticipant>) -> Unit
+    onAdd: (String, Double, FirestoreParticipant, List<FirestoreParticipant>, String?) -> Unit
 ) {
     var expenseName by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
     var paidBy by remember { mutableStateOf(participants.firstOrNull()) }
     var splitAmong by remember { mutableStateOf(participants.toSet()) }
     var paidByExpanded by remember { mutableStateOf(false) }
+    var selectedCategory by remember { mutableStateOf<FirestoreCategory?>(null) }
+    var categoryExpanded by remember { mutableStateOf(false) }
 
     val amountValue = amount.toDoubleOrNull() ?: 0.0
     val splitValue = if (splitAmong.isNotEmpty()) amountValue / splitAmong.size else 0.0
@@ -579,6 +661,38 @@ fun NewAddExpenseDialog(
                     }
                 }
 
+                // Category dropdown
+                ExposedDropdownMenuBox(
+                    expanded = categoryExpanded,
+                    onExpandedChange = { categoryExpanded = !categoryExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = selectedCategory?.name ?: "No Category",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Category (Optional)") },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded)
+                        },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = categoryExpanded,
+                        onDismissRequest = { categoryExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("No Category") },
+                            onClick = { selectedCategory = null; categoryExpanded = false }
+                        )
+                        categories.forEach { category ->
+                            DropdownMenuItem(
+                                text = { Text(category.name) },
+                                onClick = { selectedCategory = category; categoryExpanded = false }
+                            )
+                        }
+                    }
+                }
+
                 HorizontalDivider()
                 Text("Split among", fontWeight = FontWeight.SemiBold,
                     style = MaterialTheme.typography.bodyLarge)
@@ -610,7 +724,7 @@ fun NewAddExpenseDialog(
                 onClick = {
                     val p = paidBy ?: return@Button
                     if (expenseName.isNotBlank() && amountValue > 0 && splitAmong.isNotEmpty()) {
-                        onAdd(expenseName, amountValue, p, splitAmong.toList())
+                        onAdd(expenseName, amountValue, p, splitAmong.toList(), selectedCategory?.name)
                     }
                 },
                 enabled = expenseName.isNotBlank() && amountValue > 0 &&

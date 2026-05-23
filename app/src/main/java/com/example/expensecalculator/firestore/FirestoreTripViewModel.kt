@@ -47,6 +47,16 @@ class FirestoreTripViewModel : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    // ─── CATEGORIES ──────────────────────────────────────────────────────────
+
+    private val _categories = MutableStateFlow<List<FirestoreCategory>>(emptyList())
+    val categories: StateFlow<List<FirestoreCategory>> = _categories.asStateFlow()
+
+    // ─── NOTIFICATIONS ───────────────────────────────────────────────────────
+
+    private val _notifications = MutableStateFlow<List<FirestoreNotification>>(emptyList())
+    val notifications: StateFlow<List<FirestoreNotification>> = _notifications.asStateFlow()
+
     // ─── INIT ─────────────────────────────────────────────────────────────────
 
     init {
@@ -58,12 +68,14 @@ class FirestoreTripViewModel : ViewModel() {
             if (currentUid != null) {
                 loadMyTrips()
                 loadMyPendingInvites()
+                loadMyNotifications()
             } else {
                 // User logged out - clear data immediately
                 _trips.value = emptyList()
                 _pendingInvites.value = emptyList()
                 _currentTrip.value = null
                 _expenses.value = emptyList()
+                _notifications.value = emptyList()
             }
         }
     }
@@ -157,10 +169,10 @@ class FirestoreTripViewModel : ViewModel() {
         }
     }
 
-    fun deleteExpense(tripId: String, expenseId: String) {
+    fun deleteExpense(tripId: String, expenseId: String, expenseName: String = "") {
         viewModelScope.launch {
             try {
-                repository.deleteExpense(tripId, expenseId)
+                repository.deleteExpense(tripId, expenseId, expenseName)
             } catch (e: Exception) {
                 _error.value = e.message
             }
@@ -243,6 +255,75 @@ class FirestoreTripViewModel : ViewModel() {
                 onSuccess()
             } catch (e: Exception) {
                 onError(e.message ?: "Failed to decline invite")
+            }
+        }
+    }
+
+    // ─── CATEGORY OPERATIONS ─────────────────────────────────────────────────
+
+    fun loadCategories(tripId: String) {
+        viewModelScope.launch {
+            repository.getCategoriesForTrip(tripId).collect { _categories.value = it }
+        }
+    }
+
+    fun addCategory(
+        tripId: String,
+        name: String,
+        iconName: String,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            try {
+                repository.addCategory(tripId, name, iconName)
+                onSuccess()
+            } catch (e: Exception) {
+                onError(e.message ?: "Failed to add category")
+            }
+        }
+    }
+
+    fun deleteCategory(
+        tripId: String,
+        categoryId: String,
+        categoryName: String = "",
+        onSuccess: () -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            try {
+                repository.deleteCategory(tripId, categoryId, categoryName)
+                onSuccess()
+            } catch (e: Exception) {
+                _error.value = e.message
+            }
+        }
+    }
+
+    // ─── NOTIFICATION OPERATIONS ──────────────────────────────────────────────
+
+    private fun loadMyNotifications() {
+        viewModelScope.launch {
+            repository.getMyNotifications().collect { _notifications.value = it }
+        }
+    }
+
+    fun deleteNotification(notifId: String) {
+        viewModelScope.launch {
+            try {
+                repository.deleteNotification(notifId)
+            } catch (e: Exception) {
+                _error.value = e.message
+            }
+        }
+    }
+
+    fun markAllNotificationsRead() {
+        viewModelScope.launch {
+            try {
+                repository.markAllNotificationsRead()
+            } catch (e: Exception) {
+                // Silent fail - don't show error for this
             }
         }
     }

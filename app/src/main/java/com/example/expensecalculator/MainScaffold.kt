@@ -40,7 +40,9 @@ fun MainScaffold(
 
     // Pending invites badge count
     val pendingInvites by firestoreTripViewModel.pendingInvites.collectAsState()
-    val inviteCount = pendingInvites.size
+    val notifications by firestoreTripViewModel.notifications.collectAsState()
+    val unreadNotificationCount = notifications.count { !it.read }
+    val inviteCount = pendingInvites.size + unreadNotificationCount
 
     val selectedTab = when {
         currentRoute?.startsWith("trip_main") == true ||

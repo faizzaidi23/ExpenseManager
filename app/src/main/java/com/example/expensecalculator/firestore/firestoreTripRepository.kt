@@ -120,14 +120,18 @@ class FirestoreTripRepository {
             .collection("expenses")
             .add(expenseData)
             .await()
+
+        sendNotificationToParticipants(tripId, "expense_added", "${currentUser?.displayName ?: "Someone"} added expense '$expenseName' of $amount")
     }
 
-    suspend fun deleteExpense(tripId: String, expenseId: String) {
+    suspend fun deleteExpense(tripId: String, expenseId: String, expenseName: String) {
         db.collection("trips").document(tripId)
             .collection("expenses")
             .document(expenseId)
             .delete()
             .await()
+
+        sendNotificationToParticipants(tripId, "expense_deleted", "${currentUser?.displayName ?: "Someone"} deleted expense '$expenseName'")
     }
 
     // ─── USER SEARCH ─────────────────────────────────────────────────────────
@@ -222,11 +226,54 @@ class FirestoreTripRepository {
         batch.update(tripRef, "participants", FieldValue.arrayUnion(newParticipant))
 
         batch.commit().await()
+
+        sendNotificationToParticipants(invite.tripId, "member_joined", "${currentUser?.displayName ?: "Someone"} joined the trip")
     }
 
     suspend fun declineInvite(invite: FirestoreInvite) {
         db.collection("trip_invites").document(invite.id)
             .update("status", "declined").await()
+    }
+
+    // ─── CATEGORIES ──────────────────────────────────────────────────────────
+
+    fun getCategoriesForTrip(tripId: String): Flow<List<FirestoreCategory>> = callbackFlow {
+        val listener = db.collection("trips").document(tripId)
+            .collection("categories")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+                val categories = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toFirestoreCategory()
+                } ?: emptyList()
+                trySend(categories)
+            }
+        awaitClose { listener.remove() }
+    }
+
+    suspend fun addCategory(tripId: String, name: String, iconName: String) {
+        val categoryData = hashMapOf(
+            "name" to name,
+            "iconName" to iconName
+        )
+        db.collection("trips").document(tripId)
+            .collection("categories")
+            .add(categoryData)
+            .await()
+
+        sendNotificationToParticipants(tripId, "category_added", "${currentUser?.displayName ?: "Someone"} added category '$name'")
+    }
+
+    suspend fun deleteCategory(tripId: String, categoryId: String, categoryName: String) {
+        db.collection("trips").document(tripId)
+            .collection("categories")
+            .document(categoryId)
+            .delete()
+            .await()
+
+        sendNotificationToParticipants(tripId, "category_deleted", "${currentUser?.displayName ?: "Someone"} deleted category '$categoryName'")
     }
 
     // ─── HELPERS ─────────────────────────────────────────────────────────────
@@ -269,7 +316,8 @@ class FirestoreTripRepository {
                         shareAmount = (it["shareAmount"] as? Number)?.toDouble() ?: 0.0
                     )
                 },
-                categoryName = getString("categoryName")
+                categoryName = getString("categoryName"),
+                categoryIconName = getString("categoryIconName")
             )
         } catch (e: Exception) { null }
     }
@@ -299,5 +347,89 @@ class FirestoreTripRepository {
                 timestamp = (get("timestamp") as? Number)?.toLong() ?: 0L
             )
         } catch (e: Exception) { null }
+    }
+
+    private fun com.google.firebase.firestore.DocumentSnapshot.toFirestoreCategory(): FirestoreCategory? {
+        return try {
+            FirestoreCategory(
+                id = id,
+                name = getString("name") ?: return null,
+                iconName = getString("iconName") ?: "category"
+            )
+        } catch (e: Exception) { null }
+    }
+
+
+    // ─── NOTIFICATIONS ────────────────────────────────────────────────────────
+
+    private suspend fun sendNotificationToParticipants(
+        tripId: String,
+        type: String,
+        message: String
+    ) {
+        val trip = db.collection("trips").document(tripId).get().await()
+        val tripTitle = trip.getString("title") ?: ""
+        val participantsList = trip.get("participants") as? List<Map<String, Any>> ?: return
+        val actorName = currentUser?.displayName ?: "Someone"
+
+        participantsList.forEach { participant ->
+            val recipientUid = participant["uid"] as? String ?: return@forEach
+
+            val notif = hashMapOf(
+                "tripId" to tripId,
+                "tripTitle" to tripTitle,
+                "actorUid" to uid,
+                "actorName" to actorName,
+                "recipientUid" to recipientUid,
+                "type" to type,
+                "message" to message,
+                "timestamp" to System.currentTimeMillis(),
+                "read" to false
+            )
+            db.collection("trip_notifications").add(notif).await()
+        }
+    }
+
+    fun getMyNotifications(): Flow<List<FirestoreNotification>> = callbackFlow {
+        val listener = db.collection("trip_notifications")
+            .whereEqualTo("recipientUid", uid)
+            .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) { trySend(emptyList()); return@addSnapshotListener }
+                val notifs = snapshot?.documents?.mapNotNull { doc ->
+                    try {
+                        FirestoreNotification(
+                            id = doc.id,
+                            tripId = doc.getString("tripId") ?: "",
+                            tripTitle = doc.getString("tripTitle") ?: "",
+                            actorUid = doc.getString("actorUid") ?: "",
+                            actorName = doc.getString("actorName") ?: "",
+                            recipientUid = doc.getString("recipientUid") ?: "",
+                            type = doc.getString("type") ?: "",
+                            message = doc.getString("message") ?: "",
+                            timestamp = (doc.get("timestamp") as? Number)?.toLong() ?: 0L,
+                            read = doc.getBoolean("read") ?: false
+                        )
+                    } catch (e: Exception) { null }
+                } ?: emptyList()
+                trySend(notifs)
+            }
+        awaitClose { listener.remove() }
+    }
+
+    suspend fun deleteNotification(notifId: String) {
+        db.collection("trip_notifications").document(notifId).delete().await()
+    }
+
+    suspend fun markAllNotificationsRead() {
+        val batch = db.batch()
+        db.collection("trip_notifications")
+            .whereEqualTo("recipientUid", uid)
+            .whereEqualTo("read", false)
+            .get().await()
+            .documents.forEach {
+                batch.update(it.reference, "read", true)
+            }
+        batch.commit().await()
     }
 }

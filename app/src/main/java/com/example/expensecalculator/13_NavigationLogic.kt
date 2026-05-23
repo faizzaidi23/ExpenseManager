@@ -86,6 +86,30 @@ fun NavGraph(
                 )
             }
 
+            // ── CATEGORY EXPENSES SCREEN ──────────────────────────────────
+            composable(
+                route = "category_expenses/{tripId}/{categoryId}",
+                arguments = listOf(
+                    navArgument("tripId") { type = NavType.StringType },
+                    navArgument("categoryId") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val tripId = backStackEntry.arguments?.getString("tripId") ?: return@composable
+                val categoryId = backStackEntry.arguments?.getString("categoryId") ?: return@composable
+                val categories by firestoreTripViewModel.categories.collectAsState()
+                val expenses by firestoreTripViewModel.expenses.collectAsState()
+                val category = categories.find { it.id == categoryId } ?: return@composable
+
+                com.example.expensecalculator.TripManager.CategoryExpensesScreen(
+                    navController = navController,
+                    category = category,
+                    expenses = expenses,
+                    currencySymbol = "₹",
+                    viewModel = firestoreTripViewModel,
+                    tripId = tripId
+                )
+            }
+
             // ── OLD ROOM SCREENS (keep for account manager) ───────────────
             composable("first_screen") {
                 FirstScreen(navController = navController)
