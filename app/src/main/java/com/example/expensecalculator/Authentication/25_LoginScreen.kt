@@ -165,7 +165,7 @@ fun LoginScreen(
                             containerColor = Color.White,
                             contentColor = DarkGreyText
                         ),
-                        border = ButtonDefaults.outlinedButtonBorder.copy(brush = SolidColor(GoogleButtonBorder))
+                        border = ButtonDefaults.outlinedButtonBorder.copy(brush = SolidColor(PrimaryBlue))
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.ic_google),
@@ -197,8 +197,8 @@ fun LoginScreen(
                             unfocusedBorderColor = LightGray,
                             focusedLabelColor = PrimaryBlue,
                             cursorColor = PrimaryBlue,
-                            unfocusedContainerColor = Color(0xFFF0F0F0),
-                            focusedContainerColor = Color(0xFFF0F0F0),
+                            unfocusedContainerColor = Color(0xFFEFF6FF),
+                            focusedContainerColor = Color(0xFFEFF6FF),
                         ),
                         singleLine = true
                     )
@@ -215,8 +215,8 @@ fun LoginScreen(
                             unfocusedBorderColor = LightGray,
                             focusedLabelColor = PrimaryBlue,
                             cursorColor = PrimaryBlue,
-                            unfocusedContainerColor = Color(0xFFF0F0F0),
-                            focusedContainerColor = Color(0xFFF0F0F0),
+                            unfocusedContainerColor = Color(0xFFEFF6FF),
+                            focusedContainerColor = Color(0xFFEFF6FF),
                         ),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),

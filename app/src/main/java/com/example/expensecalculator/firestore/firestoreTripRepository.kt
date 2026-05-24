@@ -432,4 +432,47 @@ class FirestoreTripRepository {
             }
         batch.commit().await()
     }
+
+
+    suspend fun markSettlementPaid(
+        tripId: String,
+        fromName: String,
+        toName: String,
+        amount: Double
+    ) {
+        // Store the paid settlement in Firestore
+        val settlementData = hashMapOf(
+            "fromName" to fromName,
+            "toName" to toName,
+            "amount" to amount,
+            "timestamp" to System.currentTimeMillis()
+        )
+        db.collection("trips").document(tripId)
+            .collection("paid_settlements")
+            .add(settlementData)
+            .await()
+
+        // Send notification
+        sendNotificationToParticipants(
+            tripId = tripId,
+            type = "settlement_paid",
+            message = "$fromName paid $toName ₹${"%.2f".format(amount)}"
+        )
+    }
+
+    fun getPaidSettlements(tripId: String): Flow<List<Triple<String, String, Double>>> = callbackFlow {
+        val listener = db.collection("trips").document(tripId)
+            .collection("paid_settlements")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) { trySend(emptyList()); return@addSnapshotListener }
+                val paid = snapshot?.documents?.mapNotNull { doc ->
+                    val from = doc.getString("fromName") ?: return@mapNotNull null
+                    val to = doc.getString("toName") ?: return@mapNotNull null
+                    val amt = (doc.get("amount") as? Number)?.toDouble() ?: return@mapNotNull null
+                    Triple(from, to, amt)
+                } ?: emptyList()
+                trySend(paid)
+            }
+        awaitClose { listener.remove() }
+    }
 }

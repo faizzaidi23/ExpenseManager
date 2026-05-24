@@ -153,10 +153,7 @@ private fun SettlementHeaderCard(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
-            containerColor = if (isAllSettled)
-                Color.White
-            else
-                Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Row(

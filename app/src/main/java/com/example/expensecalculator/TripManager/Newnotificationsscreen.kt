@@ -1,5 +1,11 @@
 package com.example.expensecalculator.TripManager
 
+
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import kotlinx.coroutines.delay
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -19,10 +25,11 @@ import androidx.compose.ui.unit.dp
 import com.example.expensecalculator.firestore.FirestoreNotification
 import com.example.expensecalculator.firestore.FirestoreTripViewModel
 import com.example.expensecalculator.ui.theme.IconBackground
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun NewNotificationsScreen(
     viewModel: FirestoreTripViewModel,
@@ -37,6 +44,20 @@ fun NewNotificationsScreen(
         viewModel.markAllNotificationsRead()
     }
 
+    var isRefreshing by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = isRefreshing,
+        onRefresh = {
+            scope.launch {
+                isRefreshing = true
+                viewModel.markAllNotificationsRead()
+                delay(1000)
+                isRefreshing = false
+            }
+        }
+    )
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -48,59 +69,96 @@ fun NewNotificationsScreen(
         modifier = modifier
     ) { padding ->
 
-        if (pendingInvites.isEmpty() && notifications.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.Notifications, null, modifier = Modifier.size(60.dp),
-                        tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f))
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text("No Notifications", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Trip activity will appear here", style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
-                }
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                contentPadding = PaddingValues(vertical = 16.dp)
-            ) {
-                // Pending invites
-                if (pendingInvites.isNotEmpty()) {
-                    item {
-                        Text("Pending Invites (${pendingInvites.size})",
-                            style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                    }
-                    items(pendingInvites) { invite ->
-                        InviteCard(
-                            invite = invite,
-                            isLoading = isLoading,
-                            onAccept = {
-                                viewModel.acceptInvite(invite,
-                                    onSuccess = { Toast.makeText(context, "Joined ${invite.tripTitle}!", Toast.LENGTH_SHORT).show() },
-                                    onError = { msg -> Toast.makeText(context, msg, Toast.LENGTH_LONG).show() }
-                                )
-                            },
-                            onDecline = { viewModel.declineInvite(invite) }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .pullRefresh(pullRefreshState)
+        ) {
+            if (pendingInvites.isEmpty() && notifications.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            Icons.Default.Notifications, null,
+                            modifier = Modifier.size(60.dp),
+                            tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            "No Notifications",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Trip activity will appear here",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                         )
                     }
                 }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    contentPadding = PaddingValues(vertical = 16.dp)
+                ) {
+                    if (pendingInvites.isNotEmpty()) {
+                        item {
+                            Text(
+                                "Pending Invites (${pendingInvites.size})",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        items(pendingInvites) { invite ->
+                            InviteCard(
+                                invite = invite,
+                                isLoading = isLoading,
+                                onAccept = {
+                                    viewModel.acceptInvite(invite,
+                                        onSuccess = {
+                                            Toast.makeText(context, "Joined ${invite.tripTitle}!", Toast.LENGTH_SHORT).show()
+                                        },
+                                        onError = { msg ->
+                                            Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                                        }
+                                    )
+                                },
+                                onDecline = { viewModel.declineInvite(invite) }
+                            )
+                        }
+                    }
+                    if (notifications.isNotEmpty()) {
+                        item {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                "Activity",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        items(notifications, key = { it.id }) { notif ->
+                            ActivityNotificationCard(
+                                notification = notif,
+                                onDelete = { viewModel.deleteNotification(notif.id) }
+                            )
+                        }
+                    }
+                }
+            }
 
-                // Activity notifications
-                if (notifications.isNotEmpty()) {
-                    item {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text("Activity", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                    }
-                    items(notifications, key = { it.id }) { notif ->
-                        ActivityNotificationCard(
-                            notification = notif,
-                            onDelete = { viewModel.deleteNotification(notif.id) }
-                        )
-                    }
-                }
-            }
+            PullRefreshIndicator(
+                refreshing = isRefreshing,
+                state = pullRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter),
+                contentColor = MaterialTheme.colorScheme.primary
+            )
         }
     }
 }

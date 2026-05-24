@@ -48,19 +48,19 @@ fun ProfileScreen(
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
-            containerColor = Color.White,
+            containerColor = MaterialTheme.colorScheme.surface,
             shape = MaterialTheme.shapes.large,
             title = {
                 Text(
                     "Logout",
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             },
             text = {
                 Text(
                     "Are you sure you want to logout?",
-                    color = Color.Black.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
             },
             confirmButton = {
@@ -93,13 +93,13 @@ fun ProfileScreen(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { if (!isLoading) showDeleteDialog = false },
-            containerColor = Color.White,
+            containerColor = MaterialTheme.colorScheme.surface,
             shape = MaterialTheme.shapes.large,
             icon = {
                 Icon(
                     Icons.Default.Warning,
                     contentDescription = null,
-                    tint = Color.Black,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(32.dp)
                 )
             },
@@ -107,7 +107,7 @@ fun ProfileScreen(
                 Text(
                     "Delete Account",
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black,
+                    color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center
                 )
             },
@@ -119,18 +119,18 @@ fun ProfileScreen(
                     Text(
                         "This will permanently delete:",
                         fontWeight = FontWeight.SemiBold,
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         "• Your profile\n• All trips you created\n• All your invites",
-                        color = Color.Black.copy(alpha = 0.7f),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                         fontSize = 14.sp
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         "This action cannot be undone.",
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 13.sp
                     )
                 }
@@ -151,9 +151,9 @@ fun ProfileScreen(
                     },
                     enabled = !isLoading,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Black,
+                        containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = Color.White,
-                        disabledContainerColor = Color.Gray
+                        disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                     ),
                     shape = MaterialTheme.shapes.small
                 ) {
@@ -173,7 +173,7 @@ fun ProfileScreen(
                     onClick = { showDeleteDialog = false },
                     enabled = !isLoading,
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = Color.Black
+                        contentColor = MaterialTheme.colorScheme.onSurface
                     ),
                     shape = MaterialTheme.shapes.small
                 ) { Text("Cancel") }
@@ -283,9 +283,9 @@ fun ProfileScreen(
                     .fillMaxWidth()
                     .height(50.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color.Black
+                    contentColor = MaterialTheme.colorScheme.primary
                 ),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.Black),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
                 shape = MaterialTheme.shapes.small
             ) {
                 Icon(Icons.Default.Logout, contentDescription = null)
@@ -296,15 +296,16 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             // Delete Account button
-            OutlinedButton(
+            Button(
                 onClick = { showDeleteDialog = true },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.primary
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.White,
+                    disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                 ),
-                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
                 shape = MaterialTheme.shapes.small
             ) {
                 Icon(Icons.Default.DeleteForever, contentDescription = null)

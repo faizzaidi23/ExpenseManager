@@ -57,6 +57,18 @@ class FirestoreTripViewModel : ViewModel() {
     private val _notifications = MutableStateFlow<List<FirestoreNotification>>(emptyList())
     val notifications: StateFlow<List<FirestoreNotification>> = _notifications.asStateFlow()
 
+
+    //paid settlement state
+
+    private val _paidSettlements = MutableStateFlow<List<Triple<String, String, Double>>>(emptyList())
+    val paidSettlements: StateFlow<List<Triple<String, String, Double>>> = _paidSettlements.asStateFlow()
+
+    fun loadPaidSettlements(tripId: String) {
+        viewModelScope.launch {
+            repository.getPaidSettlements(tripId).collect { _paidSettlements.value = it }
+        }
+    }
+
     // ─── INIT ─────────────────────────────────────────────────────────────────
 
     init {
@@ -329,4 +341,23 @@ class FirestoreTripViewModel : ViewModel() {
     }
 
     fun clearError() { _error.value = null }
+
+
+
+    fun markSettlementPaid(
+        tripId: String,
+        fromName: String,
+        toName: String,
+        amount: Double,
+        onSuccess: () -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            try {
+                repository.markSettlementPaid(tripId, fromName, toName, amount)
+                onSuccess()
+            } catch (e: Exception) {
+                _error.value = e.message
+            }
+        }
+    }
 }

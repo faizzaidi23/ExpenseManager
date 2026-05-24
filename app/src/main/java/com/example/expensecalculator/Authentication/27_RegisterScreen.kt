@@ -127,8 +127,8 @@ fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
                             focusedBorderColor = PrimaryBlue,
                             unfocusedBorderColor = LightGray,
                             cursorColor = PrimaryBlue,
-                            unfocusedContainerColor = Color(0xFFF0F0F0),
-                            focusedContainerColor = Color(0xFFF0F0F0),
+                            unfocusedContainerColor = Color(0xFFEFF6FF),
+                            focusedContainerColor = Color(0xFFEFF6FF),
                         ),
                         singleLine = true
                     )
@@ -148,8 +148,8 @@ fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
                             focusedLabelColor = PrimaryBlue,
                             unfocusedLabelColor = HintGray,
                             cursorColor = PrimaryBlue,
-                            unfocusedContainerColor = Color(0xFFF0F0F0),
-                            focusedContainerColor = Color(0xFFF0F0F0),
+                            unfocusedContainerColor = Color(0xFFEFF6FF),
+                            focusedContainerColor = Color(0xFFEFF6FF),
                         ),
                         singleLine = true
                     )
@@ -168,8 +168,8 @@ fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
                             focusedLabelColor = PrimaryBlue,
                             unfocusedLabelColor = HintGray,
                             cursorColor = PrimaryBlue,
-                            unfocusedContainerColor = Color(0xFFF0F0F0),
-                            focusedContainerColor = Color(0xFFF0F0F0),
+                            unfocusedContainerColor = Color(0xFFEFF6FF),
+                            focusedContainerColor = Color(0xFFEFF6FF),
                         ),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -196,8 +196,8 @@ fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
                             focusedLabelColor = PrimaryBlue,
                             unfocusedLabelColor = HintGray,
                             cursorColor = PrimaryBlue,
-                            unfocusedContainerColor = Color(0xFFF0F0F0),
-                            focusedContainerColor = Color(0xFFF0F0F0),
+                            unfocusedContainerColor = Color(0xFFEFF6FF),
+                            focusedContainerColor = Color(0xFFEFF6FF),
                         ),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),

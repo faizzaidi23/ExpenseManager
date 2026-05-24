@@ -2,11 +2,11 @@ package com.example.expensecalculator.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// PRIMARY COLORS - Black/White Theme
-val PrimaryBlue = Color(0xFF000000)        // Black
-val PrimaryBlueDark = Color(0xFF262626)    // Dark gray
-val PrimaryBlueLight = Color(0xFF404040)   // Light black
-val IconBackground = Color(0xFFF5F5F5)     // Light gray
+// PRIMARY COLORS - Blue Theme
+val PrimaryBlue = Color(0xFF60A5FA)
+val PrimaryBlueDark = Color(0xFF3B82F6)
+val PrimaryBlueLight = Color(0xFF93C5FD)
+val IconBackground = Color(0xFFEFF6FF)
 
 // BACKGROUND & SURFACE
 val ScreenBackground = Color(0xFFFAFAFA)   // Very light gray
@@ -26,7 +26,7 @@ val DividerGrey = Color(0xFFE5E5E5)
 val ErrorColor = Color(0xFFD32F2F)
 val SuccessGreen = Color(0xFF34C759)
 val WarningYellow = Color(0xFFFFCC00)
-val InfoBlue = Color(0xFF000000)           // Black
+val InfoBlue = Color(0xFF60A5FA)
 
 // BALANCE COLORS
 val PositiveBalanceColor = Color(0xFF34C759)
@@ -38,10 +38,10 @@ val SelectedTabColor = PrimaryBlue
 val UnselectedTabColor = SecondaryText
 
 // DARK THEME COLORS
-val DarkPrimaryBlue = Color(0xFFFFFFFF)    // White
-val DarkPrimaryBlueDark = Color(0xFFE5E5E5) // Light gray
-val DarkPrimaryBlueLight = Color(0xFFA3A3A3) // Medium gray
-val DarkIconBackground = Color(0xFF2C2C2C) // Dark gray
+val DarkPrimaryBlue = Color(0xFF60A5FA)
+val DarkPrimaryBlueDark = Color(0xFF3B82F6)
+val DarkPrimaryBlueLight = Color(0xFF93C5FD)
+val DarkIconBackground = Color(0xFF1E3A5F)
 
 // DARK BACKGROUND & SURFACE
 val DarkScreenBackground = Color(0xFF121212)
@@ -61,7 +61,7 @@ val DarkDividerGrey = Color(0xFF444444)
 val DarkErrorColor = Color(0xFFD32F2F)
 val DarkSuccessGreen = Color(0xFF34C759)
 val DarkWarningYellow = Color(0xFFFFCC00)
-val DarkInfoBlue = Color(0xFFFFFFFF)       // White
+val DarkInfoBlue = Color(0xFF60A5FA)       // Changed from white to match PrimaryBlue
 
 // DARK BALANCE COLORS
 val DarkPositiveBalanceColor = Color(0xFF34C759)

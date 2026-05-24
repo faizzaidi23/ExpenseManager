@@ -1,10 +1,15 @@
 package com.example.expensecalculator.TripManager
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -16,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -30,15 +36,18 @@ import com.example.expensecalculator.ui.theme.NegativeBalanceColor
 import com.example.expensecalculator.ui.theme.PositiveBalanceColor
 import com.example.expensecalculator.util.CurrencyCode
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun NewTripDetailScreen(
     navController: NavController,
     viewModel: FirestoreTripViewModel,
     tripId: String
 ) {
+    val context = LocalContext.current
     val currentTrip by viewModel.currentTrip.collectAsState()
     val expenses by viewModel.expenses.collectAsState()
     val uid = FirebaseAuth.getInstance().currentUser?.uid ?: ""
@@ -52,9 +61,27 @@ fun NewTripDetailScreen(
     var showEditExpenseDialog by remember { mutableStateOf(false) }
     var selectedExpenseForEdit by remember { mutableStateOf<FirestoreExpense?>(null) }
 
+    // Pull to refresh
+    var isRefreshing by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = isRefreshing,
+        onRefresh = {
+            scope.launch {
+                isRefreshing = true
+                viewModel.setCurrentTrip(tripId)
+                viewModel.loadCategories(tripId)
+                viewModel.loadPaidSettlements(tripId)
+                delay(1000)
+                isRefreshing = false
+            }
+        }
+    )
+
     LaunchedEffect(tripId) {
         viewModel.setCurrentTrip(tripId)
         viewModel.loadCategories(tripId)
+        viewModel.loadPaidSettlements(tripId)
     }
 
     // Compute balances from expenses
@@ -70,8 +97,17 @@ fun NewTripDetailScreen(
         result.toMap()
     }
 
-    val settlements = remember(balances) {
+    val paidSettlements by viewModel.paidSettlements.collectAsState()
+
+    val settlements = remember(balances, paidSettlements) {
         SettlementOptimizer.calculateOptimizedSettlements(balances)
+            .filter { settlement ->
+                paidSettlements.none { paid ->
+                    paid.first == settlement.from &&
+                            paid.second == settlement.to &&
+                            kotlin.math.abs(paid.third - settlement.amount) < 0.01
+                }
+            }
     }
 
     val currencySymbol = currentTrip?.currency?.let {
@@ -92,7 +128,6 @@ fun NewTripDetailScreen(
                     }
                 },
                 actions = {
-                    // Invite participants button
                     IconButton(onClick = {
                         navController.navigate("invite_participants/$tripId")
                     }) {
@@ -153,103 +188,120 @@ fun NewTripDetailScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Column(
+
+        // Wrap everything in a Box with pullRefresh
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(paddingValues)
+                .pullRefresh(pullRefreshState)
         ) {
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Trip icon
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape)
-                    .background(IconBackground),
-                contentAlignment = Alignment.Center
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Icon(
-                    Icons.Default.Flight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(40.dp)
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Trip icon
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(CircleShape)
+                        .background(IconBackground),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Flight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = currentTrip?.title ?: "Loading...",
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
                 )
-            }
+                Text(
+                    text = "${currentTrip?.participants?.size ?: 0} participants",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
 
-            Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-            Text(
-                text = currentTrip?.title ?: "Loading...",
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Text(
-                text = "${currentTrip?.participants?.size ?: 0} participants",
-                fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Tabs
-            TabRow(
-                selectedTabIndex = selectedTabIndex,
-                containerColor = MaterialTheme.colorScheme.background,
-                indicator = { tabPositions ->
-                    TabRowDefaults.SecondaryIndicator(
-                        Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                        height = 2.dp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            ) {
-                listOf("Expenses", "Balances", "People", "Categories").forEachIndexed { index, title ->
-                    Tab(
-                        selected = selectedTabIndex == index,
-                        onClick = { selectedTabIndex = index },
-                        text = { Text(title, fontSize = 14.sp) },
-                        selectedContentColor = MaterialTheme.colorScheme.primary,
-                        unselectedContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                }
-            }
-
-            when (selectedTabIndex) {
-                0 -> NewExpensesTab(
-                    expenses = expenses,
-                    currencySymbol = currencySymbol,
-                    currentUid = uid,
-                    tripId = tripId,
-                    viewModel = viewModel,
-                    participants = currentTrip?.participants ?: emptyList(),
-                    categories = viewModel.categories.collectAsState().value,
-                    onDeleteExpense = { expense ->
-                        viewModel.deleteExpense(tripId, expense.id, expense.expenseName)
-                    },
-                    onEditExpense = { expense ->
-                        selectedExpenseForEdit = expense
-                        showEditExpenseDialog = true
+                // Tabs
+                TabRow(
+                    selectedTabIndex = selectedTabIndex,
+                    containerColor = MaterialTheme.colorScheme.background,
+                    indicator = { tabPositions ->
+                        TabRowDefaults.SecondaryIndicator(
+                            Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                            height = 2.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
-                )
-                1 -> NewBalancesTab(
-                    balances = balances,
-                    settlements = settlements,
-                    currencySymbol = currencySymbol
-                )
-                2 -> PeopleTab(
-                    participants = currentTrip?.participants ?: emptyList(),
-                    currentUid = uid
-                )
-                3 -> CategoriesTab(
-                    tripId = tripId,
-                    expenses = expenses,
-                    currencySymbol = currencySymbol,
-                    viewModel = viewModel,
-                    navController = navController
-                )
+                ) {
+                    listOf("Expenses", "Balances", "People", "Categories").forEachIndexed { index, title ->
+                        Tab(
+                            selected = selectedTabIndex == index,
+                            onClick = { selectedTabIndex = index },
+                            text = { Text(title, fontSize = 14.sp) },
+                            selectedContentColor = MaterialTheme.colorScheme.primary,
+                            unselectedContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+
+                when (selectedTabIndex) {
+                    0 -> NewExpensesTab(
+                        expenses = expenses,
+                        currencySymbol = currencySymbol,
+                        currentUid = uid,
+                        tripId = tripId,
+                        viewModel = viewModel,
+                        participants = currentTrip?.participants ?: emptyList(),
+                        categories = viewModel.categories.collectAsState().value,
+                        onDeleteExpense = { expense ->
+                            viewModel.deleteExpense(tripId, expense.id, expense.expenseName)
+                        },
+                        onEditExpense = { expense ->
+                            selectedExpenseForEdit = expense
+                            showEditExpenseDialog = true
+                        }
+                    )
+                    1 -> NewBalancesTab(
+                        balances = balances,
+                        settlements = settlements,
+                        currencySymbol = currencySymbol,
+                        tripId = tripId,
+                        viewModel = viewModel
+                    )
+                    2 -> PeopleTab(
+                        participants = currentTrip?.participants ?: emptyList(),
+                        currentUid = uid
+                    )
+                    3 -> CategoriesTab(
+                        tripId = tripId,
+                        expenses = expenses,
+                        currencySymbol = currencySymbol,
+                        viewModel = viewModel,
+                        navController = navController
+                    )
+                }
             }
+
+            // Pull to refresh indicator — always on top
+            PullRefreshIndicator(
+                refreshing = isRefreshing,
+                state = pullRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter),
+                contentColor = MaterialTheme.colorScheme.primary
+            )
         }
     }
 
@@ -451,90 +503,200 @@ private fun NewExpenseCard(
     }
 }
 
-// ─── BALANCES TAB ────────────────────────────────────────────���────────────────
+// ─── BALANCES TAB ─────────────────────────────────────────────────────────────
 
 @Composable
 private fun NewBalancesTab(
     balances: Map<String, Double>,
     settlements: List<Settlement>,
-    currencySymbol: String
+    currencySymbol: String,
+    tripId: String,
+    viewModel: FirestoreTripViewModel
 ) {
+    val context = LocalContext.current
+
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Text("Individual Balances", style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold)
+            Text(
+                "Individual Balances",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
         }
         items(balances.entries.toList()) { (name, balance) ->
             Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
-                    modifier = Modifier.size(38.dp).clip(CircleShape).background(IconBackground),
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(IconBackground),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         name.firstOrNull()?.toString()?.uppercase() ?: "?",
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary, fontSize = 14.sp
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 14.sp
                     )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                Text(name, modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    name,
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodyLarge
+                )
                 val (text, color) = when {
                     balance > 0.01 -> "gets back $currencySymbol${"%.2f".format(abs(balance))}" to PositiveBalanceColor
                     balance < -0.01 -> "owes $currencySymbol${"%.2f".format(abs(balance))}" to NegativeBalanceColor
                     else -> "settled" to MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                 }
-                Text(text, color = color, fontWeight = FontWeight.Medium,
-                    style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    text,
+                    color = color,
+                    fontWeight = FontWeight.Medium,
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
         }
 
         if (settlements.isNotEmpty()) {
             item {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Settlement Plan", style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold)
+                Text(
+                    "Settlement Plan",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "Tap 'Mark as Paid' to notify all trip members",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
             }
             items(settlements) { settlement ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.small,
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp)
                     ) {
-                        Text(settlement.from, fontWeight = FontWeight.Medium,
-                            modifier = Modifier.weight(1f))
-                        Icon(Icons.AutoMirrored.Filled.ArrowForward, null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(18.dp))
-                        Text(settlement.to, fontWeight = FontWeight.Medium,
-                            modifier = Modifier.weight(1f).padding(start = 8.dp))
-                        Text("$currencySymbol${"%.2f".format(settlement.amount)}",
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(IconBackground),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    settlement.from.firstOrNull()?.toString()?.uppercase() ?: "?",
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontSize = 13.sp
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                settlement.from,
+                                fontWeight = FontWeight.Medium,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowForward,
+                                null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier
+                                    .padding(horizontal = 8.dp)
+                                    .size(18.dp)
+                            )
+                            Text(
+                                settlement.to,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Text(
+                                "$currencySymbol${"%.2f".format(settlement.amount)}",
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+                        HorizontalDivider(
+                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Button(
+                            onClick = {
+                                viewModel.markSettlementPaid(
+                                    tripId = tripId,
+                                    fromName = settlement.from,
+                                    toName = settlement.to,
+                                    amount = settlement.amount,
+                                    onSuccess = {
+                                        Toast.makeText(
+                                            context,
+                                            "${settlement.from} marked as paid!",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = MaterialTheme.shapes.small,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Icon(
+                                Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                "Mark as Paid",
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
                 }
             }
         } else {
             item {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("All settled!", style = MaterialTheme.typography.bodyMedium,
-                    color = PositiveBalanceColor, fontWeight = FontWeight.SemiBold)
+                Text(
+                    "All settled!",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = PositiveBalanceColor,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
     }
 }
 
-// ─── PEOPLE TAB ──────────────────────���────────────────────────────────────────
+// ─── PEOPLE TAB ───────────────────────────────────────────────────────────────
 
 @Composable
 private fun PeopleTab(
@@ -546,8 +708,11 @@ private fun PeopleTab(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         item {
-            Text("${participants.size} Participant${if (participants.size != 1) "s" else ""}",
-                style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            Text(
+                "${participants.size} Participant${if (participants.size != 1) "s" else ""}",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
         }
         items(participants) { participant ->
             Card(
@@ -557,11 +722,16 @@ private fun PeopleTab(
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(14.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
-                        modifier = Modifier.size(44.dp).clip(CircleShape).background(IconBackground),
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(IconBackground),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -573,16 +743,25 @@ private fun PeopleTab(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(participant.name, fontWeight = FontWeight.SemiBold,
-                                style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                participant.name,
+                                fontWeight = FontWeight.SemiBold,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
                             if (participant.uid == currentUid) {
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("(you)", style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.primary)
+                                Text(
+                                    "(you)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
                             }
                         }
-                        Text(participant.email, style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+                        Text(
+                            participant.email,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        )
                     }
                 }
             }
@@ -633,7 +812,6 @@ fun NewAddExpenseDialog(
                     singleLine = true
                 )
 
-                // Paid by dropdown
                 ExposedDropdownMenuBox(
                     expanded = paidByExpanded,
                     onExpandedChange = { paidByExpanded = !paidByExpanded }
@@ -661,7 +839,6 @@ fun NewAddExpenseDialog(
                     }
                 }
 
-                // Category dropdown
                 ExposedDropdownMenuBox(
                     expanded = categoryExpanded,
                     onExpandedChange = { categoryExpanded = !categoryExpanded }
@@ -694,8 +871,11 @@ fun NewAddExpenseDialog(
                 }
 
                 HorizontalDivider()
-                Text("Split among", fontWeight = FontWeight.SemiBold,
-                    style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "Split among",
+                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.bodyLarge
+                )
 
                 participants.forEach { participant ->
                     Row(
@@ -711,9 +891,11 @@ fun NewAddExpenseDialog(
                         )
                         Text(participant.name, modifier = Modifier.weight(1f))
                         if (splitAmong.contains(participant)) {
-                            Text("$currencySymbol${"%.2f".format(splitValue)}",
+                            Text(
+                                "$currencySymbol${"%.2f".format(splitValue)}",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
                         }
                     }
                 }

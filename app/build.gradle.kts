@@ -116,4 +116,9 @@ dependencies {
 
     //fcm setup + save token
     implementation("com.google.firebase:firebase-messaging-ktx")
+
+    implementation("androidx.compose.material:material:1.6.7")
+
+
+
 }
