@@ -18,6 +18,9 @@ class FirestoreTripViewModel : ViewModel() {
     private val _trips = MutableStateFlow<List<FirestoreTrip>>(emptyList())
     val trips: StateFlow<List<FirestoreTrip>> = _trips.asStateFlow()
 
+    private val _tripsLoading = MutableStateFlow(true)
+    val tripsLoading: StateFlow<Boolean> = _tripsLoading.asStateFlow()
+
     private val _currentTrip = MutableStateFlow<FirestoreTrip?>(null)
     val currentTrip: StateFlow<FirestoreTrip?> = _currentTrip.asStateFlow()
 
@@ -57,15 +60,58 @@ class FirestoreTripViewModel : ViewModel() {
     private val _notifications = MutableStateFlow<List<FirestoreNotification>>(emptyList())
     val notifications: StateFlow<List<FirestoreNotification>> = _notifications.asStateFlow()
 
+    // ─── PAID SETTLEMENTS STATE ──────────────────────────────────────────────
 
-    //paid settlement state
+    private val _paidSettlements = MutableStateFlow<List<FirestoreSettlement>>(emptyList())
+    val paidSettlements: StateFlow<List<FirestoreSettlement>> = _paidSettlements.asStateFlow()
 
-    private val _paidSettlements = MutableStateFlow<List<Triple<String, String, Double>>>(emptyList())
-    val paidSettlements: StateFlow<List<Triple<String, String, Double>>> = _paidSettlements.asStateFlow()
+    private var paidSettlementsJob: kotlinx.coroutines.Job? = null
+
+    // ─── GLOBAL STATISTICS STATE ─────────────────────────────────────────────
+
+    private val _tripBalancesSummary = MutableStateFlow<List<FirestoreTripRepository.TripBalanceSummary>>(emptyList())
+    val tripBalancesSummary: StateFlow<List<FirestoreTripRepository.TripBalanceSummary>> = _tripBalancesSummary.asStateFlow()
+
+    private val _globalPayables = MutableStateFlow(0.0)
+    val globalPayables: StateFlow<Double> = _globalPayables.asStateFlow()
+
+    private val _globalReceivables = MutableStateFlow(0.0)
+    val globalReceivables: StateFlow<Double> = _globalReceivables.asStateFlow()
+
+    private val _globalNetBalance = MutableStateFlow(0.0)
+    val globalNetBalance: StateFlow<Double> = _globalNetBalance.asStateFlow()
+
+    private val _isStatsLoading = MutableStateFlow(false)
+    val isStatsLoading: StateFlow<Boolean> = _isStatsLoading.asStateFlow()
+
+    fun loadGlobalStatistics() {
+        viewModelScope.launch {
+            _isStatsLoading.value = true
+            val currentTrips = _trips.value
+            if (currentTrips.isNotEmpty()) {
+                val summaries = repository.calculateTripBalances(currentTrips)
+                _tripBalancesSummary.value = summaries
+
+                // Automatically aggregate global totals from the individual summaries
+                _globalPayables.value = summaries.sumOf { it.payables }
+                _globalReceivables.value = summaries.sumOf { it.receivables }
+                _globalNetBalance.value = summaries.sumOf { it.netBalance }
+            } else {
+                _tripBalancesSummary.value = emptyList()
+                _globalPayables.value = 0.0
+                _globalReceivables.value = 0.0
+                _globalNetBalance.value = 0.0
+            }
+            _isStatsLoading.value = false
+        }
+    }
 
     fun loadPaidSettlements(tripId: String) {
-        viewModelScope.launch {
-            repository.getPaidSettlements(tripId).collect { _paidSettlements.value = it }
+        paidSettlementsJob?.cancel()
+        paidSettlementsJob = viewModelScope.launch {
+            repository.getPaidSettlements(tripId).collect {
+                _paidSettlements.value = it
+            }
         }
     }
 
@@ -96,7 +142,11 @@ class FirestoreTripViewModel : ViewModel() {
 
     fun loadMyTrips() {
         viewModelScope.launch {
-            repository.getMyTrips().collect { _trips.value = it }
+            _tripsLoading.value = true
+            repository.getMyTrips().collect { trips ->
+                _trips.value = trips
+                _tripsLoading.value = false
+            }
         }
     }
 
@@ -343,9 +393,12 @@ class FirestoreTripViewModel : ViewModel() {
     fun clearError() { _error.value = null }
 
 
+    // ─── NEW TWO-STEP SETTLEMENT FUNCTIONS ────────────────────────────────────
 
-    fun markSettlementPaid(
+    fun initiateSettlement(
         tripId: String,
+        fromUid: String,
+        toUid: String,
         fromName: String,
         toName: String,
         amount: Double,
@@ -353,8 +406,28 @@ class FirestoreTripViewModel : ViewModel() {
     ) {
         viewModelScope.launch {
             try {
-                repository.markSettlementPaid(tripId, fromName, toName, amount)
+                repository.initiateSettlement(tripId, fromUid, toUid, fromName, toName, amount)
                 onSuccess()
+            } catch (e: Exception) {
+                _error.value = e.message
+            }
+        }
+    }
+
+    fun confirmSettlement(tripId: String, settlementId: String, toName: String) {
+        viewModelScope.launch {
+            try {
+                repository.confirmSettlement(tripId, settlementId, toName)
+            } catch (e: Exception) {
+                _error.value = e.message
+            }
+        }
+    }
+
+    fun rejectSettlement(tripId: String, settlementId: String) {
+        viewModelScope.launch {
+            try {
+                repository.rejectSettlement(tripId, settlementId)
             } catch (e: Exception) {
                 _error.value = e.message
             }

@@ -31,7 +31,7 @@ import java.util.Date
         SettlementPayment::class,
         ExpenseCategory::class
     ],
-    version = 17,
+    version = 18,
     exportSchema = false
 )
 abstract class ExpenseDatabase : RoomDatabase() {
@@ -52,7 +52,7 @@ abstract class ExpenseDatabase : RoomDatabase() {
                     ExpenseDatabase::class.java,
                     "expense_db_$userId"
                 )
-                    .addMigrations(MIGRATION_16_17)
+                    .addMigrations(MIGRATION_16_17, MIGRATION_17_18)
                     .build()
                 INSTANCE = instance
                 instance
@@ -69,6 +69,39 @@ val MIGRATION_16_17 = object : Migration(16, 17) {
     override fun migrate(database: SupportSQLiteDatabase) {
         database.execSQL("ALTER TABLE trips ADD COLUMN firestoreId TEXT")
         database.execSQL("ALTER TABLE trips ADD COLUMN createdBy TEXT")
+    }
+}
+
+val MIGRATION_17_18 = object : Migration(17, 18) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        // Recreate tripExpense table with deferred foreign key constraint
+        // This ensures categoryId violations don't cause constraint errors
+        database.execSQL("""
+            CREATE TABLE tripExpense_new (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                tripId INTEGER NOT NULL,
+                expenseName TEXT NOT NULL,
+                amount REAL NOT NULL,
+                paidBy TEXT NOT NULL,
+                date TEXT,
+                splitType TEXT NOT NULL DEFAULT 'EQUALLY',
+                categoryId INTEGER,
+                FOREIGN KEY (tripId) REFERENCES trips(id) ON DELETE CASCADE,
+                FOREIGN KEY (categoryId) REFERENCES expense_categories(id) ON DELETE SET NULL
+            )
+        """.trimIndent())
+
+        // Copy existing data
+        database.execSQL("""
+            INSERT INTO tripExpense_new (id, tripId, expenseName, amount, paidBy, date, splitType, categoryId)
+            SELECT id, tripId, expenseName, amount, paidBy, date, splitType, categoryId FROM tripExpense
+        """.trimIndent())
+
+        // Drop old table
+        database.execSQL("DROP TABLE tripExpense")
+
+        // Rename new table
+        database.execSQL("ALTER TABLE tripExpense_new RENAME TO tripExpense")
     }
 }
 

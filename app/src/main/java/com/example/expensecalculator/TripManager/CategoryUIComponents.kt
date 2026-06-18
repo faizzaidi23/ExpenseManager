@@ -13,7 +13,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
- import androidx.compose.material3.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -143,7 +143,7 @@ fun EnhancedCategoryCard(
                     .clickable { onCategoryClick() }
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp) // Adjusted spacing
             ) {
                 // Category Icon
                 Box(
@@ -176,7 +176,7 @@ fun EnhancedCategoryCard(
                     )
                 }
 
-                // Total and Actions
+                // Total Amount
                 Text(
                     "$currencySymbol${"%.2f".format(totalAmount)}",
                     fontWeight = FontWeight.Bold,
@@ -184,23 +184,7 @@ fun EnhancedCategoryCard(
                     color = color
                 )
 
-                // Expand Icon
-                Icon(
-                    if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = if (expanded) "Collapse" else "Expand",
-                    modifier = Modifier
-                        .size(20.dp)
-                        .clickable { expanded = !expanded },
-                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-            }
-
-            // Delete Button (always visible on the right)
-            Box(
-                modifier = Modifier
-                    .align(Alignment.End)
-                    .padding(end = 16.dp, bottom = 8.dp)
-            ) {
+                // Delete Button inline with amount
                 IconButton(
                     onClick = { showDeleteConfirm = true },
                     modifier = Modifier.size(32.dp)
@@ -212,6 +196,16 @@ fun EnhancedCategoryCard(
                         modifier = Modifier.size(18.dp)
                     )
                 }
+
+                // Expand Icon
+                Icon(
+                    if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clickable { expanded = !expanded },
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
             }
 
             // Expanded content (expenses in this category)
@@ -594,10 +588,8 @@ fun CategoriesTab(
         CategoryPickerDialog(
             onDismiss = { showAddCategoryDialog = false },
             onCategorySelected = { categoryName ->
-                val (icon, color) = PredefinedCategories.getCategoryIcon(categoryName)
-                val iconName = PredefinedCategories.categories.find {
-                    it.name.equals(categoryName, ignoreCase = true)
-                }?.name ?: "Other"
+                val iconName = PredefinedCategories.categories
+                    .find { it.name.equals(categoryName, ignoreCase = true) }?.name ?: "Other"
                 viewModel.addCategory(tripId, categoryName, iconName)
                 showAddCategoryDialog = false
             }

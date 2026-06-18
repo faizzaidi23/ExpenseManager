@@ -181,14 +181,25 @@ fun NavGraph(
             // ── PROFILE ───────────────────────────────────────────────────
             composable("profile") {
                 ProfileScreen(
+                    navController=navController,
                     themePreferences = themePreferences,
                     authViewModel = authViewModel,
                     onLogout = {
                         com.example.expensecalculator.Data.ExpenseDatabase.clearInstance()
                         FirebaseAuth.getInstance().signOut()
-                    }
+                    },
+                    firestoreTripViewModel = firestoreTripViewModel
                 )
             }
+
+
+            composable("trip_balances") {
+                com.example.expensecalculator.TripManager.TripBalancesListScreen(
+                    navController = navController,
+                    firestoreTripViewModel = firestoreTripViewModel
+                )
+            }
+
         }
     }
 }

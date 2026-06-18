@@ -45,6 +45,7 @@ fun NewTripMainScreen(
     modifier: Modifier = Modifier
 ) {
     val trips by viewModel.trips.collectAsState()
+    val tripsLoading by viewModel.tripsLoading.collectAsState()
     var isRefreshing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val pullRefreshState = rememberPullRefreshState(
@@ -58,8 +59,6 @@ fun NewTripMainScreen(
             }
         }
     )
-
-
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -102,7 +101,11 @@ fun NewTripMainScreen(
                 .padding(padding)
                 .pullRefresh(pullRefreshState)
         ) {
-            if (trips.isEmpty()) {
+            if (tripsLoading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else if (trips.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center

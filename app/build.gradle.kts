@@ -1,13 +1,20 @@
+import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.google.ksp)
-    // add the kotlinx serialization plugin to handle the json data
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.21"
-
-
     id("com.google.gms.google-services")
 }
+
+// --- ADDED: Logic to explicitly read local.properties ---
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.inputStream())
+}
+val geminiKey = localProperties.getProperty("GEMINI_API_KEY") ?: "KEY_NOT_FOUND"
+// --------------------------------------------------------
 
 android {
     namespace = "com.faiz.trekandtrack"
@@ -21,6 +28,9 @@ android {
         versionName = "1.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // UPDATED: Using the 'geminiKey' variable we created above
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
     }
 
     buildTypes {
@@ -39,9 +49,12 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
+
     buildFeatures {
         compose = true
+        buildConfig = true
     }
+
     composeOptions {
         kotlinCompilerExtensionVersion = libs.versions.composeCompiler.get()
     }
@@ -74,27 +87,21 @@ dependencies {
     // Coil - Image Loading Library for Compose
     implementation("io.coil-kt:coil-compose:2.5.0")
 
-    //----Additions for networking
-    implementation("com.squareup.retrofit2:retrofit:2.9.0") // The core library for making network requests to your backend
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0") // The library for converting Kotlin objects to and from JSON.
-    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0") // A converter that allows retrofit to use kotlinx Serialization
-    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0") // A utility to log network request and response details, which is very helpful for debugging
+    // Networking
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
 
-    // Moshi for JSON parsing (for exchange rate API)
+    // Moshi
     implementation("com.squareup.moshi:moshi:1.15.0")
     implementation("com.squareup.moshi:moshi-kotlin:1.15.0")
     implementation("com.squareup.retrofit2:converter-moshi:2.9.0")
     ksp("com.squareup.moshi:moshi-kotlin-codegen:1.15.0")
 
-    //splash screen - removed the androidx.core:core-splashscreen library to avoid drawable issues
-    //implementation("androidx.core:core-splashscreen:1.0.1")
-
-    //Apache POI for Excel export
+    // Apache POI
     implementation("org.apache.poi:poi:5.2.3")
     implementation("org.apache.poi:poi-ooxml:5.2.3")
-
-    //For advanced pdfs
-    //implementation("com.itextpdf:itext7-core:7.2.5")
 
     // Testing
     testImplementation(libs.junit)
@@ -105,20 +112,18 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-
-    // Firebase BOM - manages all Firebase versions
-    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
-    implementation("com.google.firebase:firebase-auth-ktx")
+    // Firebase
+    implementation(platform("com.google.firebase:firebase-bom:33.0.0"))
+    implementation("com.google.firebase:firebase-auth-ktx") {
+        exclude(group = "com.google.firebase", module = "firebase-common")
+    }
     implementation("com.google.firebase:firebase-firestore-ktx")
-
-// Google Sign-In
+    implementation("com.google.firebase:firebase-common-ktx")
     implementation("com.google.android.gms:play-services-auth:20.7.0")
-
-    //fcm setup + save token
     implementation("com.google.firebase:firebase-messaging-ktx")
-
     implementation("androidx.compose.material:material:1.6.7")
+    implementation("com.google.firebase:firebase-storage-ktx")
 
-
-
+    // AI
+    implementation("com.google.ai.client.generativeai:generativeai:0.7.0")
 }

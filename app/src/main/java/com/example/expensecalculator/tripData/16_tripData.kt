@@ -51,7 +51,7 @@ data class ExpenseCategory(
     tableName = "tripExpense",
     foreignKeys = [
         ForeignKey(entity = Trip::class, parentColumns = ["id"], childColumns = ["tripId"], onDelete = ForeignKey.CASCADE),
-        ForeignKey(entity = ExpenseCategory::class, parentColumns = ["id"], childColumns = ["categoryId"], onDelete = ForeignKey.SET_NULL)
+        ForeignKey(entity = ExpenseCategory::class, parentColumns = ["id"], childColumns = ["categoryId"], onDelete = ForeignKey.SET_NULL, deferred = true)
     ]
 )
 data class TripExpense(
@@ -63,7 +63,7 @@ data class TripExpense(
     val paidBy: String, // The name of the participant who paid
     val date: String? = null,
     val splitType: String = "EQUALLY",
-    val categoryId: Int? = null // Foreign key to ExpenseCategory
+    val categoryId: Int? = null // Foreign key to ExpenseCategory - nullable to prevent constraint violations
 )
 
 // This is the crucial new table to track splits

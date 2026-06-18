@@ -151,39 +151,78 @@ class AuthViewModel : ViewModel() {
             try {
                 val user = auth.currentUser ?: throw Exception("No user logged in")
                 val uid = user.uid
-                val db = FirebaseFirestore.getInstance()
+                val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
 
                 // 1. Delete all invites sent by user
-                val sentInvites = db.collection("trip_invites")
-                    .whereEqualTo("fromUid", uid)
-                    .get().await()
+                val sentInvites = db.collection("trip_invites").whereEqualTo("fromUid", uid).get().await()
                 sentInvites.documents.forEach { it.reference.delete().await() }
 
                 // 2. Delete all invites received by user
-                val receivedInvites = db.collection("trip_invites")
-                    .whereEqualTo("toUid", uid)
-                    .get().await()
+                val receivedInvites = db.collection("trip_invites").whereEqualTo("toUid", uid).get().await()
                 receivedInvites.documents.forEach { it.reference.delete().await() }
 
-                // 3. Remove user from trips they're a participant of (but not creator)
-                val participantTrips = db.collection("trips")
-                    .whereArrayContains("participantUids", uid)
-                    .get().await()
+                // 2B. Delete notifications intended for this user
+                val notifications = db.collection("trip_notifications").whereEqualTo("recipientUid", uid).get().await()
+                notifications.documents.forEach { it.reference.delete().await() }
+
+                // 3. Handle trips they are a participant of
+                val participantTrips = db.collection("trips").whereArrayContains("participantUids", uid).get().await()
+
                 participantTrips.documents.forEach { doc ->
                     val createdBy = doc.getString("createdBy")
                     if (createdBy == uid) {
-                        // Delete trips created by user entirely
+                        // If they created the trip, delete the whole trip entirely
                         doc.reference.delete().await()
                     } else {
-                        // Remove user from participant list
+                        val anonymizedName = "Deleted User"
+
+                        // 3A. Anonymize in the main participants list
                         val participants = doc.get("participants") as? List<Map<String, Any>> ?: emptyList()
-                        val participantUids = doc.get("participantUids") as? List<String> ?: emptyList()
-                        doc.reference.update(
-                            mapOf(
-                                "participants" to participants.filter { it["uid"] != uid },
-                                "participantUids" to participantUids.filter { it != uid }
-                            )
-                        ).await()
+                        val updatedParticipants = participants.map { p ->
+                            if (p["uid"] == uid) mapOf("uid" to uid, "name" to anonymizedName, "email" to "") else p
+                        }
+                        doc.reference.update("participants", updatedParticipants).await()
+
+                        // 3B. Cascade the anonymized name to all expenses using UIDs!
+                        val expensesSnapshot = doc.reference.collection("expenses").get().await()
+                        expensesSnapshot.documents.forEach { expDoc ->
+                            var needsUpdate = false
+                            val expData = expDoc.data?.toMutableMap() ?: return@forEach
+
+                            if (expData["paidByUid"] == uid) {
+                                expData["paidByName"] = anonymizedName
+                                needsUpdate = true
+                            }
+
+                            val splits = expData["splits"] as? List<Map<String, Any>>
+                            if (splits != null) {
+                                val updatedSplits = splits.map { split ->
+                                    if (split["uid"] == uid) {
+                                        needsUpdate = true
+                                        split.toMutableMap().apply { this["name"] = anonymizedName }
+                                    } else split
+                                }
+                                if (needsUpdate) expData["splits"] = updatedSplits
+                            }
+                            if (needsUpdate) expDoc.reference.set(expData).await()
+                        }
+
+                        // 3C. Cascade the anonymized name to all paid settlements using UIDs!
+                        val settlementsSnapshot = doc.reference.collection("paid_settlements").get().await()
+                        settlementsSnapshot.documents.forEach { setDoc ->
+                            var needsUpdate = false
+                            val setData = setDoc.data?.toMutableMap() ?: return@forEach
+
+                            if (setData["fromUid"] == uid) {
+                                setData["fromName"] = anonymizedName
+                                needsUpdate = true
+                            }
+                            if (setData["toUid"] == uid) {
+                                setData["toName"] = anonymizedName
+                                needsUpdate = true
+                            }
+                            if (needsUpdate) setDoc.reference.set(setData).await()
+                        }
                     }
                 }
 
@@ -200,6 +239,111 @@ class AuthViewModel : ViewModel() {
                 } else {
                     onError("Failed to delete account: ${e.message}")
                 }
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    fun updateProfile(
+        newName: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            isLoading = true
+            try {
+                val user = auth.currentUser ?: throw Exception("No user logged in")
+                val uid = user.uid
+                val oldName = user.displayName ?: ""
+
+                // 1. Update Firebase Auth Profile
+                val profileUpdate = com.google.firebase.auth.UserProfileChangeRequest.Builder()
+                    .setDisplayName(newName)
+                    .build()
+                user.updateProfile(profileUpdate).await()
+
+                val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+
+                // 2. Update Firestore User Document
+                val updates = mapOf(
+                    "name" to newName,
+                    "nameLower" to newName.lowercase()
+                )
+                db.collection("users").document(uid)
+                    .set(updates, com.google.firebase.firestore.SetOptions.merge())
+                    .await()
+
+                // 3. CASCADE THE NAME CHANGE TO ALL TRIPS
+                if (oldName.isNotEmpty() && oldName != newName) {
+                    val participantTrips = db.collection("trips")
+                        .whereArrayContains("participantUids", uid)
+                        .get().await()
+
+                    participantTrips.documents.forEach { doc ->
+                        // A. Update in the trip's participants list
+                        val participants = doc.get("participants") as? List<Map<String, Any>> ?: emptyList()
+                        val updatedParticipants = participants.map { p ->
+                            if (p["uid"] == uid) {
+                                p.toMutableMap().apply { this["name"] = newName }
+                            } else p
+                        }
+                        doc.reference.update("participants", updatedParticipants).await()
+
+                        // B. Update all expenses
+                        val expensesSnapshot = doc.reference.collection("expenses").get().await()
+                        expensesSnapshot.documents.forEach { expDoc ->
+                            var needsUpdate = false
+                            val expData = expDoc.data?.toMutableMap() ?: return@forEach
+
+                            // Check if they paid
+                            if (expData["paidByName"] == oldName) {
+                                expData["paidByName"] = newName
+                                needsUpdate = true
+                            }
+
+                            // Check if they were in the split
+                            val splits = expData["splits"] as? List<Map<String, Any>>
+                            if (splits != null) {
+                                val updatedSplits = splits.map { split ->
+                                    if (split["name"] == oldName) {
+                                        needsUpdate = true
+                                        split.toMutableMap().apply { this["name"] = newName }
+                                    } else {
+                                        split
+                                    }
+                                }
+                                if (needsUpdate) {
+                                    expData["splits"] = updatedSplits
+                                }
+                            }
+
+                            if (needsUpdate) expDoc.reference.set(expData).await()
+                        }
+
+                        // C. Update all paid settlements
+                        val settlementsSnapshot = doc.reference.collection("paid_settlements").get().await()
+                        settlementsSnapshot.documents.forEach { setDoc ->
+                            var needsUpdate = false
+                            val setData = setDoc.data?.toMutableMap() ?: return@forEach
+
+                            if (setData["fromName"] == oldName) {
+                                setData["fromName"] = newName
+                                needsUpdate = true
+                            }
+                            if (setData["toName"] == oldName) {
+                                setData["toName"] = newName
+                                needsUpdate = true
+                            }
+
+                            if (needsUpdate) setDoc.reference.set(setData).await()
+                        }
+                    }
+                }
+
+                onSuccess()
+            } catch (e: Exception) {
+                onError(e.message ?: "Failed to update profile")
             } finally {
                 isLoading = false
             }
