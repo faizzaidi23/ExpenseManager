@@ -51,6 +51,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "1087169199906-2q1api0etpk1v9ct4fm7707f8as2ebbc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.faizzaidi.trekandtrack",
+            "certificate_hash": "dadf8b733843f1fdb83a2e58d65d52c3db5238c5"
+          }
+        },
+        {
           "client_id": "1087169199906-elmu6f6qdlut9lnbs5dl22j25h2fifj3.apps.googleusercontent.com",
           "client_type": 3
         }
