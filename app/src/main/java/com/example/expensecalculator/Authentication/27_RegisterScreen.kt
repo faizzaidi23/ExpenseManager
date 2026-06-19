@@ -35,21 +35,25 @@ import com.example.expensecalculator.ui.theme.*
 import com.faiz.trekandtrack.R
 
 // Aliases for legacy color names referenced in this file.
-// These map older symbol names to the canonical colors defined in ui.theme.Color.kt
 private val DarkBlueBackground = DarkScreenBackground
 private val WhiteCard = CardBackground
 private val DarkGreyText = PrimaryText
 private val HintGray = SecondaryText
-
 
 @Composable
 fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
     val context = LocalContext.current
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
-    var confirmPassword by remember { mutableStateOf("") } // Local state for confirm password
+    var confirmPassword by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
 
-    var name by remember{mutableStateOf("")}
+    // Validation logic
+    val isFormValid = name.isNotBlank() &&
+            viewModel.email.isNotBlank() &&
+            viewModel.password.isNotBlank() &&
+            viewModel.password.length >= 6 &&
+            viewModel.password == confirmPassword
 
     Box(
         modifier = Modifier
@@ -76,7 +80,7 @@ fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
 
             // App Logo
             Image(
-                painter = painterResource(id = R.drawable.ic_launcher), // Replace with your logo
+                painter = painterResource(id = R.drawable.ic_launcher),
                 contentDescription = "App Logo",
                 modifier = Modifier.size(72.dp)
             )
@@ -106,7 +110,7 @@ fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f), // Takes remaining space
+                    .weight(1f),
                 color = WhiteCard,
                 shape = RoundedCornerShape(topStart = 33.dp, topEnd = 32.dp)
             ) {
@@ -134,7 +138,6 @@ fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
                     )
                     Spacer(modifier = Modifier.height(14.dp))
 
-
                     // Email Text Field
                     OutlinedTextField(
                         value = viewModel.email,
@@ -155,11 +158,10 @@ fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
                     )
                     Spacer(modifier = Modifier.height(14.dp))
 
-
                     OutlinedTextField(
                         value = viewModel.password,
                         onValueChange = { viewModel.onPasswordChange(it) },
-                        label = { Text("Password", color = HintGray) },
+                        label = { Text("Password (Min 6 chars)", color = HintGray) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -190,6 +192,7 @@ fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
                         label = { Text("Confirm Password", color = HintGray) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
+                        isError = confirmPassword.isNotBlank() && viewModel.password != confirmPassword,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = PrimaryBlue,
                             unfocusedBorderColor = LightGray,
@@ -209,19 +212,31 @@ fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
                             }
                         }
                     )
+
+                    // Show error text if passwords don't match
+                    if (confirmPassword.isNotBlank() && viewModel.password != confirmPassword) {
+                        Text(
+                            text = "Passwords do not match",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 4.dp, top = 4.dp)
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(33.dp))
 
                     // Register Button
                     Button(
                         onClick = {
-                            // TODO: Add validation -> if (viewModel.password == confirmPassword)
                             viewModel.register(
-                                name=name,
+                                name = name.trim(),
                                 onSuccess = { navController.popBackStack() },
                                 onError = { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
                             )
                         },
-                        enabled = !viewModel.isLoading,
+                        enabled = !viewModel.isLoading && isFormValid,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),

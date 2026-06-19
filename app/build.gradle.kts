@@ -21,7 +21,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.faiz.trekandtrack"
+        applicationId = "com.faizzaidi.trekandtrack"
         minSdk = 26
         targetSdk = 35
         versionCode = 2

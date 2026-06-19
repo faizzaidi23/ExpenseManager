@@ -22,8 +22,8 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="com.faiz.trekandtrack" />
-                  <option name="mobileSdkAppId" value="1:1087169199906:android:d91ac18443e1eaabceef7b" />
+                  <option name="appId" value="com.faizzaidi.trekandtrack" />
+                  <option name="mobileSdkAppId" value="1:1087169199906:android:5d3b3a7077957839ceef7b" />
                   <option name="projectId" value="trekandtrack-c4e71" />
                   <option name="projectNumber" value="1087169199906" />
                 </ConnectionSetting>
